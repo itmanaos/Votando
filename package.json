@@ -1,6 +1,6 @@
 
 {
-  "name": "biduga-electoral-command-center",
+  "name": "votando-electoral-command-center",
   "version": "1.1.2",
   "private": true,
   "description": "Suíte estratégica de comando eleitoral com inteligência artificial e georreferenciamento.",
@@ -32,6 +32,6 @@
     "gemini",
     "vercel"
   ],
-  "author": "Biduga Tech Team",
+  "author": "Votando Tech Team",
   "license": "MIT"
 }

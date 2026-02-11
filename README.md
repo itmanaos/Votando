@@ -1,5 +1,5 @@
 
-# 🗳️ Biduga - Electoral Command Center
+# 🗳️ Votando - Electoral Command Center
 
 Suíte estratégica para gestão de campanhas eleitorais, monitoramento de eleitores e inteligência de dados.
 

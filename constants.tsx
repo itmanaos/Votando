@@ -1,7 +1,7 @@
 
 import { Voter, SupportLevel, TeamMember, UserRole, PollResult, VotingStation, Survey, SurveyType, QuestionType } from './types';
 
-// Palette Colors inspired by Biduga (Blue/Teal/White)
+// Palette Colors inspired by Votando (Blue/Teal/White)
 export const THEME = {
   primary: '#0f172a',    // Slate 900
   secondary: '#3b82f6',  // Blue 500

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { MOCK_VOTERS } from '../constants';
 import { SupportLevel, Voter } from '../types';
+import { useToast } from './Toast';
 
 interface DetailModalProps {
   voter: Voter;
@@ -230,7 +231,6 @@ const CreateVoterModal: React.FC<CreateModalProps> = ({ onClose, onSave }) => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          {/* Nome e Telefone */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-500 uppercase ml-1">Nome Completo</label>
@@ -256,7 +256,6 @@ const CreateVoterModal: React.FC<CreateModalProps> = ({ onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Idade, Gênero e Bairro */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-500 uppercase ml-1">Idade</label>
@@ -294,7 +293,6 @@ const CreateVoterModal: React.FC<CreateModalProps> = ({ onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Local Eleitoral: Zona e Seção */}
           <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
             <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <Landmark size={12} /> Localização Eleitoral
@@ -331,7 +329,6 @@ const CreateVoterModal: React.FC<CreateModalProps> = ({ onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Classificação Estratégica */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-500 uppercase ml-1">Nível de Apoio</label>
@@ -361,7 +358,6 @@ const CreateVoterModal: React.FC<CreateModalProps> = ({ onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Interesses */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase ml-1">Interesses Principais</label>
             <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
@@ -411,8 +407,8 @@ const VoterList: React.FC = () => {
   const [selectedVoter, setSelectedVoter] = useState<Voter | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedVoterIds, setSelectedVoterIds] = useState<Set<string>>(new Set());
+  const { showToast } = useToast();
 
-  // Extrai zonas únicas e contagem para o filtro
   const votingZonesData = useMemo(() => {
     const counts: Record<string, number> = {};
     voters.forEach(v => {
@@ -452,10 +448,11 @@ const VoterList: React.FC = () => {
       age: parseInt(newData.age),
       lastContact: new Date().toISOString().split('T')[0],
       leaderId: 'L1',
-      coordinates: { lat: -23.55, lng: -46.63 } // Mock coordinates
+      coordinates: { lat: -23.55, lng: -46.63 }
     };
     setVoters([newVoter, ...voters]);
     setIsCreateModalOpen(false);
+    showToast(`Eleitor ${newVoter.name} cadastrado com sucesso!`, 'success');
   };
 
   const toggleSelectVoter = (id: string) => {
@@ -477,26 +474,35 @@ const VoterList: React.FC = () => {
   };
 
   const bulkUpdateSupportLevel = (level: SupportLevel) => {
+    const count = selectedVoterIds.size;
     const updatedVoters = voters.map(v => 
       selectedVoterIds.has(v.id) ? { ...v, supportLevel: level } : v
     );
     setVoters(updatedVoters);
     setSelectedVoterIds(new Set());
-    alert(`${selectedVoterIds.size} eleitores atualizados para ${level}`);
+    showToast(`${count} eleitores atualizados para ${level}`, 'info');
   };
 
   const bulkAddTag = (tag: string) => {
+    const count = selectedVoterIds.size;
     const updatedVoters = voters.map(v => 
       selectedVoterIds.has(v.id) ? { ...v, interests: Array.from(new Set([...v.interests, tag])) } : v
     );
     setVoters(updatedVoters);
     setSelectedVoterIds(new Set());
-    alert(`Tag "${tag}" adicionada a ${selectedVoterIds.size} eleitores`);
+    showToast(`Tag "${tag}" adicionada a ${count} eleitores`, 'success');
+  };
+
+  const handleBulkDelete = () => {
+    const count = selectedVoterIds.size;
+    const remaining = voters.filter(v => !selectedVoterIds.has(v.id));
+    setVoters(remaining);
+    setSelectedVoterIds(new Set());
+    showToast(`${count} registros removidos da base.`, 'error');
   };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col relative min-h-[500px]">
-      {/* Modals */}
       {selectedVoter && (
         <VoterDetailModal 
           voter={selectedVoter} 
@@ -511,7 +517,6 @@ const VoterList: React.FC = () => {
         />
       )}
 
-      {/* Bulk Actions Bar */}
       {selectedVoterIds.size > 0 && (
         <div className="absolute top-0 inset-x-0 h-16 bg-blue-600 z-20 flex items-center justify-between px-6 animate-in slide-in-from-top-full duration-300">
           <div className="flex items-center gap-4 text-white">
@@ -554,14 +559,17 @@ const VoterList: React.FC = () => {
               </div>
             </div>
 
-            <button className="p-2 text-white/80 hover:text-white hover:bg-rose-500 rounded-lg transition-all" title="Remover Selecionados">
+            <button 
+              onClick={handleBulkDelete}
+              className="p-2 text-white/80 hover:text-white hover:bg-rose-500 rounded-lg transition-all" 
+              title="Remover Selecionados"
+            >
               <Trash2 size={20} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Header & Controls */}
       <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -573,7 +581,6 @@ const VoterList: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
-          {/* Campo de Busca */}
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -585,7 +592,6 @@ const VoterList: React.FC = () => {
             />
           </div>
 
-          {/* Filtros */}
           <div className="flex gap-2 w-full sm:w-auto">
             <div className="relative flex-1 sm:flex-none">
               <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
@@ -625,7 +631,6 @@ const VoterList: React.FC = () => {
         </div>
       </div>
 
-      {/* Table Area */}
       <div className="overflow-x-auto flex-1">
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-bold sticky top-0 z-10">
@@ -707,7 +712,10 @@ const VoterList: React.FC = () => {
                   </td>
                   <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-2">
-                      <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                      <button 
+                        onClick={() => showToast(`Iniciando chat com ${voter.name}...`, 'info')}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                      >
                         <MessageSquare size={16} />
                       </button>
                       <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">

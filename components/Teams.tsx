@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { MOCK_TEAMS } from '../constants';
 import { TeamMember, UserRole } from '../types';
+import { useToast } from './Toast';
 
 interface CreateMemberModalProps {
   onClose: () => void;
@@ -150,6 +151,7 @@ const Teams: React.FC = () => {
   const [members, setMembers] = useState<TeamMember[]>(MOCK_TEAMS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const { showToast } = useToast();
 
   const stats = useMemo(() => {
     const totalGoals = members.reduce((acc, m) => acc + m.goals, 0);
@@ -181,11 +183,11 @@ const Teams: React.FC = () => {
     };
     setMembers([newMember, ...members]);
     setIsModalOpen(false);
+    showToast(`${newMember.name} agora faz parte da equipe!`, 'success');
   };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
           <div className="bg-blue-100 text-blue-600 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
@@ -220,7 +222,6 @@ const Teams: React.FC = () => {
         </div>
       </div>
 
-      {/* Main List Area */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -319,7 +320,10 @@ const Teams: React.FC = () => {
                         >
                           <Phone size={16} />
                         </a>
-                        <button className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
+                        <button 
+                          onClick={() => showToast(`Enviando mensagem para ${member.name}...`, 'info')}
+                          className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                        >
                           <MessageSquare size={16} />
                         </button>
                         <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">

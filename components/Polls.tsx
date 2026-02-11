@@ -28,6 +28,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { MOCK_SURVEYS, MOCK_POLLS } from '../constants';
 import { Survey, SurveyType, Question, QuestionType } from '../types';
+import { useToast } from './Toast';
 
 const ComparativeReportModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const latestPoll = MOCK_POLLS[MOCK_POLLS.length - 1];
@@ -56,7 +57,6 @@ const ComparativeReportModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          {/* Top KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
               <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Crescimento Candidato A</p>
@@ -89,7 +89,6 @@ const ComparativeReportModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
             </div>
           </div>
 
-          {/* Chart Section */}
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <h4 className="font-black text-slate-800 flex items-center gap-2">
@@ -149,7 +148,6 @@ const ComparativeReportModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
             </div>
           </div>
 
-          {/* Detailed Comparison Table */}
           <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
             <div className="p-5 border-b border-slate-50 bg-slate-50/50">
               <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Detalhamento por Período</h4>
@@ -277,7 +275,6 @@ const SurveyBuilderModal: React.FC<{ onClose: () => void; onSave: (survey: any) 
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          {/* Informações Básicas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="space-y-1.5">
@@ -329,7 +326,6 @@ const SurveyBuilderModal: React.FC<{ onClose: () => void; onSave: (survey: any) 
 
           <hr className="border-slate-100" />
 
-          {/* Construtor de Questões */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -384,7 +380,6 @@ const SurveyBuilderModal: React.FC<{ onClose: () => void; onSave: (survey: any) 
                           </div>
                         </div>
 
-                        {/* Opções para Múltipla Escolha */}
                         {q.type === QuestionType.MULTIPLE_CHOICE && (
                           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
                             <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
@@ -455,6 +450,7 @@ const Polls: React.FC = () => {
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'ATIVAS' | 'RASCUNHOS' | 'FINALIZADAS'>('ATIVAS');
+  const { showToast } = useToast();
 
   const filteredSurveys = useMemo(() => {
     const statusMap: Record<string, string> = {
@@ -474,6 +470,7 @@ const Polls: React.FC = () => {
     };
     setSurveys([survey, ...surveys]);
     setIsBuilderOpen(false);
+    showToast(`Pesquisa "${survey.title}" salva como rascunho!`, 'success');
   };
 
   const getStatusColor = (status: string) => {
@@ -487,7 +484,6 @@ const Polls: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {/* Header e Estatísticas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -523,7 +519,6 @@ const Polls: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs de Filtro */}
       <div className="flex items-center gap-2 p-1 bg-slate-200/50 rounded-xl w-fit">
         {['ATIVAS', 'RASCUNHOS', 'FINALIZADAS'].map((tab) => (
           <button
@@ -540,7 +535,6 @@ const Polls: React.FC = () => {
         ))}
       </div>
 
-      {/* Grid de Pesquisas */}
       {filteredSurveys.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredSurveys.map((survey) => (
@@ -594,7 +588,10 @@ const Polls: React.FC = () => {
                 <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all">
                   <Settings size={14} /> Configurar
                 </button>
-                <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all">
+                <button 
+                  onClick={() => showToast('Abrindo BI da pesquisa...', 'info')}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all"
+                >
                   <BarChart size={14} /> Dashboard
                 </button>
               </div>

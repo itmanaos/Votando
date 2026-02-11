@@ -7,8 +7,9 @@ import MapView from './components/MapView';
 import Teams from './components/Teams';
 import Polls from './components/Polls';
 import { UserRole } from './types';
+import { ToastProvider } from './components/Toast';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentUserRole] = useState<UserRole>(UserRole.ADMIN);
@@ -48,13 +49,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* Desktop Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col p-4">
           <div className="flex items-center gap-3 px-2 mb-10">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-500/20">B</div>
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-500/20">V</div>
             <div>
-               <h1 className="font-bold text-lg leading-tight">BIDUGA</h1>
+               <h1 className="font-bold text-lg leading-tight tracking-tight uppercase">VOTANDO</h1>
                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Electoral Tech</p>
             </div>
           </div>
@@ -99,9 +99,7 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 min-w-0 flex flex-col">
-        {/* Header */}
         <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
           <div className="flex items-center gap-4">
              <button 
@@ -121,7 +119,6 @@ const App: React.FC = () => {
                   <Bell size={20} />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
                 </button>
-                {/* Desktop Tooltip simulation */}
                 <div className="absolute right-0 mt-2 w-64 bg-white shadow-2xl rounded-xl p-4 border border-slate-100 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
                    <p className="text-xs font-bold text-slate-800 mb-2">Notificações</p>
                    <div className="space-y-2">
@@ -137,12 +134,10 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Dynamic Content */}
         <div className="flex-1 p-6 overflow-y-auto">
           {renderContent()}
         </div>
 
-        {/* Mobile Nav Bar */}
         <nav className="lg:hidden h-16 bg-white border-t border-slate-100 flex items-center justify-around px-4 sticky bottom-0 z-30 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
            {filteredNavItems.slice(0, 5).map((item) => (
              <button
@@ -159,7 +154,6 @@ const App: React.FC = () => {
         </nav>
       </main>
 
-      {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45] lg:hidden"
@@ -167,6 +161,14 @@ const App: React.FC = () => {
         ></div>
       )}
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 };
 
