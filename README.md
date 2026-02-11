@@ -1,20 +1,25 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
-# Run and deploy your AI Studio app
+# 🗳️ Biduga - Electoral Command Center
 
-This contains everything you need to run your app locally.
+Suíte estratégica para gestão de campanhas eleitorais, monitoramento de eleitores e inteligência de dados.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1zYlch0x6JnhB5GBMMXjzK1aOLXWPKlV6
+## 🚀 Como Deployar na Vercel
 
-## Run Locally
+### 1. Requisitos de Ambiente
+O sistema utiliza o **Google Gemini API** para insights estratégicos. É obrigatório configurar a variável de ambiente no dashboard da Vercel:
 
-**Prerequisites:**  Node.js
+- `API_KEY`: Sua chave de API do Google AI Studio.
 
+### 2. Passo a Passo
+1. Conecte este repositório à Vercel.
+2. Nas configurações de **Environment Variables**, adicione a chave `API_KEY`.
+3. O deploy será automático. O arquivo `vercel.json` já cuida do roteamento SPA.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🛠️ Arquitetura
+- **Frontend:** React 19 (Modern ESM/No-build approach).
+- **Estilização:** Tailwind CSS.
+- **IA:** Google Gemini 3 Flash para análise preditiva e insights.
+- **BI:** Recharts para visualização de dados e Heatmaps georreferenciados.
+
+## ⚖️ LGPD
+Este sistema foi projetado para conformidade com a LGPD, exigindo criptografia de dados de eleitores e controle de acesso baseado em papéis (RBAC).

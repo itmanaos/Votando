@@ -1,24 +1,20 @@
+
 {
-  "name": "electoral-command-center---votando",
+  "name": "biduga-electoral-command-center",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "description": "Suíte de controle de campanha eleitoral com IA e georreferenciamento.",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "serve .",
+    "build": "echo 'Static build - using ESM imports'"
   },
-  "dependencies": {
-    "lucide-react": "^0.563.0",
-    "recharts": "^3.7.0",
-    "react": "^19.2.4",
-    "@google/genai": "^1.40.0",
-    "react-dom": "^19.2.4"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
-  }
+  "keywords": [
+    "electoral",
+    "politics",
+    "management",
+    "ai",
+    "gemini"
+  ],
+  "author": "Biduga Tech Team",
+  "license": "MIT"
 }
