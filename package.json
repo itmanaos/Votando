@@ -1,9 +1,9 @@
 
 {
   "name": "biduga-electoral-command-center",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
-  "description": "Suíte de controle de campanha eleitoral com IA e georreferenciamento.",
+  "description": "Suíte estratégica de comando eleitoral com inteligência artificial e georreferenciamento.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,7 @@
     "react-dom": "^19.0.0",
     "lucide-react": "^0.460.0",
     "recharts": "^2.13.3",
-    "@google/genai": "^1.2.0"
+    "@google/genai": "^1.40.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
