@@ -18,10 +18,190 @@ import {
   LayoutList,
   Target,
   FileText,
-  Search
+  Search,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calendar,
+  Users
 } from 'lucide-react';
-import { MOCK_SURVEYS } from '../constants';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { MOCK_SURVEYS, MOCK_POLLS } from '../constants';
 import { Survey, SurveyType, Question, QuestionType } from '../types';
+
+const ComparativeReportModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const latestPoll = MOCK_POLLS[MOCK_POLLS.length - 1];
+  const previousPoll = MOCK_POLLS[MOCK_POLLS.length - 2];
+  
+  const deltaA = latestPoll.candidateA - previousPoll.candidateA;
+  const deltaUndecided = latestPoll.undecided - previousPoll.undecided;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden relative flex flex-col animate-in zoom-in duration-300">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-lg">
+              <TrendingUp size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-800 tracking-tight">Relatório Comparativo de Intenção</h3>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Análise Evolutiva • Ciclo Eleitoral 2024</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8 space-y-8">
+          {/* Top KPIs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Crescimento Candidato A</p>
+              <div className="flex items-end gap-2">
+                <h4 className="text-3xl font-black text-slate-800">{latestPoll.candidateA}%</h4>
+                <div className={`flex items-center text-xs font-bold mb-1 ${deltaA >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {deltaA >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                  {Math.abs(deltaA)}pp
+                </div>
+              </div>
+            </div>
+            <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100">
+              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Taxa de Indecisos</p>
+              <div className="flex items-end gap-2">
+                <h4 className="text-3xl font-black text-slate-800">{latestPoll.undecided}%</h4>
+                <div className={`flex items-center text-xs font-bold mb-1 ${deltaUndecided <= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {deltaUndecided <= 0 ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
+                  {Math.abs(deltaUndecided)}pp
+                </div>
+              </div>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Amostragem Acumulada</p>
+              <div className="flex items-end gap-2">
+                <h4 className="text-3xl font-black text-slate-800">
+                  {MOCK_POLLS.reduce((acc, p) => acc + p.sampleSize, 0).toLocaleString()}
+                </h4>
+                <span className="text-[10px] font-bold text-slate-400 mb-1 uppercase">Entrevistas</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Chart Section */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+              <h4 className="font-black text-slate-800 flex items-center gap-2">
+                <BarChart size={20} className="text-blue-600" />
+                Tendência Histórica de Voto
+              </h4>
+              <div className="flex gap-2">
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">Candidato A</span>
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full uppercase">Candidato B</span>
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-amber-600 bg-amber-50 px-3 py-1 rounded-full uppercase">Indecisos</span>
+              </div>
+            </div>
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={MOCK_POLLS}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#94a3b8" 
+                    fontSize={11} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { month: 'short' })}
+                  />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} unit="%" />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="candidateA" 
+                    stroke="#3b82f6" 
+                    strokeWidth={4} 
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6, stroke: '#fff' }} 
+                    activeDot={{ r: 8, strokeWidth: 0 }}
+                    name="Nosso Candidato" 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="candidateB" 
+                    stroke="#ef4444" 
+                    strokeWidth={3} 
+                    strokeDasharray="5 5"
+                    dot={{ fill: '#ef4444', r: 4 }} 
+                    name="Oponente Principal" 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="undecided" 
+                    stroke="#f59e0b" 
+                    strokeWidth={2} 
+                    dot={{ fill: '#f59e0b', r: 4 }} 
+                    name="Indecisos" 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Detailed Comparison Table */}
+          <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+            <div className="p-5 border-b border-slate-50 bg-slate-50/50">
+              <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Detalhamento por Período</h4>
+            </div>
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-tighter border-b border-slate-50">
+                  <th className="px-6 py-4">Data da Pesquisa</th>
+                  <th className="px-6 py-4">Região</th>
+                  <th className="px-6 py-4">Nosso (A)</th>
+                  <th className="px-6 py-4">Oponente (B)</th>
+                  <th className="px-6 py-4">Indecisos</th>
+                  <th className="px-6 py-4">Amostra</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {MOCK_POLLS.map((poll) => (
+                  <tr key={poll.id} className="text-sm hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-700 flex items-center gap-2">
+                      <Calendar size={14} className="text-slate-300" />
+                      {new Date(poll.date).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 font-medium">{poll.region}</td>
+                    <td className="px-6 py-4 font-black text-blue-600">{poll.candidateA}%</td>
+                    <td className="px-6 py-4 font-black text-rose-600">{poll.candidateB}%</td>
+                    <td className="px-6 py-4 font-black text-amber-600">{poll.undecided}%</td>
+                    <td className="px-6 py-4 text-slate-400 text-xs font-bold">{poll.sampleSize}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end">
+          <button 
+            onClick={() => window.print()}
+            className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+          >
+            Exportar PDF
+          </button>
+          <button 
+            onClick={onClose}
+            className="px-8 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all"
+          >
+            Fechar Relatório
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SurveyBuilderModal: React.FC<{ onClose: () => void; onSave: (survey: any) => void }> = ({ onClose, onSave }) => {
   const [title, setTitle] = useState('');
@@ -273,10 +453,10 @@ const SurveyBuilderModal: React.FC<{ onClose: () => void; onSave: (survey: any) 
 const Polls: React.FC = () => {
   const [surveys, setSurveys] = useState<Survey[]>(MOCK_SURVEYS);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'ATIVAS' | 'RASCUNHOS' | 'FINALIZADAS'>('ATIVAS');
 
   const filteredSurveys = useMemo(() => {
-    // Mapeia o rótulo da aba para o status interno do dado
     const statusMap: Record<string, string> = {
       'ATIVAS': 'ATIVA',
       'RASCUNHOS': 'RASCUNHO',
@@ -309,39 +489,47 @@ const Polls: React.FC = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Header e Estatísticas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 flex items-center justify-between">
+        <div className="md:col-span-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-800">Módulo de Pesquisas</h1>
-            <p className="text-sm text-slate-500">Inteligência de campo e monitoramento de opinião</p>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Módulo de Pesquisas</h1>
+            <p className="text-sm text-slate-500 font-medium">Inteligência de campo e monitoramento de opinião</p>
           </div>
-          <button 
-            onClick={() => setIsBuilderOpen(true)}
-            className="flex items-center gap-2 bg-amber-500 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-xl shadow-amber-500/20 hover:bg-amber-600 transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus size={20} /> CRIAR QUESTIONÁRIO
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setIsReportOpen(true)}
+              className="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl font-black text-xs shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <TrendingUp size={18} /> RELATÓRIO COMPARATIVO
+            </button>
+            <button 
+              onClick={() => setIsBuilderOpen(true)}
+              className="flex items-center gap-2 bg-amber-500 text-white px-5 py-3 rounded-2xl font-black text-xs shadow-xl shadow-amber-500/20 hover:bg-amber-600 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Plus size={18} /> CRIAR QUESTIONÁRIO
+            </button>
+          </div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-around">
           <div className="text-center">
-            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Respostas</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Total Respostas</p>
             <p className="text-xl font-black text-slate-800">1.345</p>
           </div>
           <div className="w-px h-8 bg-slate-100"></div>
           <div className="text-center">
-            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Pesquisas Ativas</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Pesquisas Ativas</p>
             <p className="text-xl font-black text-emerald-600">3</p>
           </div>
         </div>
       </div>
 
       {/* Tabs de Filtro */}
-      <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl w-fit">
+      <div className="flex items-center gap-2 p-1 bg-slate-200/50 rounded-xl w-fit">
         {['ATIVAS', 'RASCUNHOS', 'FINALIZADAS'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
-            className={`px-6 py-2 rounded-lg text-xs font-black transition-all ${
+            className={`px-6 py-2 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${
               activeTab === tab 
               ? 'bg-white text-slate-800 shadow-sm' 
               : 'text-slate-500 hover:text-slate-700'
@@ -362,14 +550,14 @@ const Polls: React.FC = () => {
                   <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${getStatusColor(survey.status)}`}>
                     {survey.status}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
                     {survey.type}
                   </span>
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-black text-slate-800 group-hover:text-amber-600 transition-colors">{survey.title}</h3>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{survey.description}</p>
+                  <h3 className="text-lg font-black text-slate-800 group-hover:text-amber-600 transition-colors tracking-tight">{survey.title}</h3>
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">{survey.description}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-50">
@@ -378,7 +566,7 @@ const Polls: React.FC = () => {
                       <FileText size={16} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">Questões</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase leading-none tracking-tighter">Questões</p>
                       <p className="text-sm font-bold text-slate-700">{survey.questions.length}</p>
                     </div>
                   </div>
@@ -387,13 +575,13 @@ const Polls: React.FC = () => {
                       <CheckCircle2 size={16} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">Respostas</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase leading-none tracking-tighter">Respostas</p>
                       <p className="text-sm font-bold text-slate-700">{survey.responsesCount}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-tighter">
                   <div className="flex items-center gap-1.5">
                     <Target size={12} className="text-slate-300" />
                     Região: {survey.targetRegion}
@@ -404,10 +592,10 @@ const Polls: React.FC = () => {
 
               <div className="p-4 bg-slate-50/50 border-t border-slate-50 flex gap-2">
                 <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all">
-                  <Settings size={14} /> Editar
+                  <Settings size={14} /> Configurar
                 </button>
                 <button className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all">
-                  <BarChart size={14} /> Resultados
+                  <BarChart size={14} /> Dashboard
                 </button>
               </div>
             </div>
@@ -435,6 +623,12 @@ const Polls: React.FC = () => {
         <SurveyBuilderModal 
           onClose={() => setIsBuilderOpen(false)} 
           onSave={handleSaveSurvey} 
+        />
+      )}
+
+      {isReportOpen && (
+        <ComparativeReportModal 
+          onClose={() => setIsReportOpen(false)} 
         />
       )}
     </div>

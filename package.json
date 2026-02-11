@@ -1,19 +1,36 @@
 
 {
   "name": "biduga-electoral-command-center",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Suíte de controle de campanha eleitoral com IA e georreferenciamento.",
+  "type": "module",
   "scripts": {
-    "start": "serve .",
-    "build": "echo 'Static build - using ESM imports'"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "lucide-react": "^0.460.0",
+    "recharts": "^2.13.3",
+    "@google/genai": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
   },
   "keywords": [
     "electoral",
     "politics",
     "management",
     "ai",
-    "gemini"
+    "gemini",
+    "vercel"
   ],
   "author": "Biduga Tech Team",
   "license": "MIT"
