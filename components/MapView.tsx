@@ -2,26 +2,63 @@
 import React, { useState } from 'react';
 import { 
   MapPin, 
-  Info, 
   Layers, 
   Crosshair, 
   Map as MapIcon, 
   Plus, 
   Minus, 
-  Search,
   Settings2,
-  Eye,
-  EyeOff,
-  AlertCircle
+  AlertCircle,
+  Navigation
 } from 'lucide-react';
 import { MOCK_STATIONS } from '../constants';
+import { useToast } from './Toast';
 
 const MapView: React.FC = () => {
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showStations, setShowStations] = useState(true);
   const [zoom, setZoom] = useState(1);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const { showToast } = useToast();
 
   const hasActiveLayers = showHeatmap || showStations;
+
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(prev + 0.5, 4));
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(prev - 0.5, 1));
+  };
+
+  const handleCenterMap = () => {
+    if (!navigator.geolocation) {
+      showToast("Geolocalização não suportada pelo seu navegador.", "error");
+      return;
+    }
+
+    setIsLocating(true);
+    showToast("Obtendo sua localização atual...", "info");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setIsLocating(false);
+        setZoom(2.5); // Zoom in on location
+        showToast("Mapa centralizado na sua posição atual.", "success");
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        setIsLocating(false);
+        let msg = "Não foi possível obter sua localização.";
+        if (error.code === error.PERMISSION_DENIED) msg = "Permissão de geolocalização negada.";
+        showToast(msg, "error");
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col h-[600px] relative overflow-hidden">
@@ -72,7 +109,7 @@ const MapView: React.FC = () => {
             backgroundImage: 'url(https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?auto=format&fit=crop&q=80&w=2000)', 
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            transform: `scale(${1 + (zoom - 1) * 0.1})`,
+            transform: `scale(${zoom})`,
             filter: showHeatmap ? 'grayscale(100%) brightness(0.7) contrast(1.2)' : 'grayscale(0%) brightness(1)'
           }}
         ></div>
@@ -122,6 +159,21 @@ const MapView: React.FC = () => {
           </div>
         ))}
 
+        {/* User Location Pulse Indicator (Simulated) */}
+        {userLocation && (
+          <div 
+            className="absolute z-40 transition-all duration-500"
+            style={{ top: '45%', left: '48%' }} 
+          >
+            <div className="relative">
+              <div className="absolute inset-0 w-8 h-8 bg-blue-500 rounded-full animate-ping opacity-40 -translate-x-1.5 -translate-y-1.5"></div>
+              <div className="w-5 h-5 bg-blue-600 border-2 border-white rounded-full shadow-lg flex items-center justify-center">
+                <Navigation size={10} className="text-white fill-current" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Heatmap Overlay Simulation */}
         {showHeatmap && (
           <div className="absolute inset-0 pointer-events-none transition-opacity duration-700 overflow-hidden opacity-60">
@@ -154,17 +206,30 @@ const MapView: React.FC = () => {
           </div>
 
           <div className="flex flex-col bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/50 overflow-hidden">
-            <button onClick={() => setZoom(z => Math.min(z + 1, 5))} className="p-3 text-slate-600 hover:bg-slate-50 transition-colors">
+            <button 
+              onClick={handleZoomIn} 
+              className="p-3 text-slate-600 hover:bg-slate-50 transition-colors"
+              title="Aumentar Zoom"
+            >
               <Plus size={22} />
             </button>
             <div className="h-px bg-slate-100 mx-2"></div>
-            <button onClick={() => setZoom(z => Math.max(z - 1, 1))} className="p-3 text-slate-600 hover:bg-slate-50 transition-colors">
+            <button 
+              onClick={handleZoomOut} 
+              className="p-3 text-slate-600 hover:bg-slate-50 transition-colors"
+              title="Diminuir Zoom"
+            >
               <Minus size={22} />
             </button>
           </div>
 
-          <button className="p-3 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/50 text-slate-600 hover:text-blue-600 transition-all active:scale-95">
-            <Crosshair size={22} />
+          <button 
+            onClick={handleCenterMap}
+            disabled={isLocating}
+            className={`p-3 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/50 text-slate-600 hover:text-blue-600 transition-all active:scale-95 ${isLocating ? 'animate-pulse' : ''}`}
+            title="Centralizar na minha localização"
+          >
+            <Crosshair size={22} className={isLocating ? 'text-blue-500' : ''} />
           </button>
         </div>
 
@@ -226,7 +291,10 @@ const MapView: React.FC = () => {
             )}
           </div>
           
-          <button className="w-full mt-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors shadow-lg active:scale-95">
+          <button 
+            onClick={() => showToast("Exportando dados geográficos...", "info")}
+            className="w-full mt-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors shadow-lg active:scale-95"
+          >
             Baixar Análise Geográfica
           </button>
         </div>
@@ -234,7 +302,7 @@ const MapView: React.FC = () => {
         {/* Zoom Indicator */}
         <div className="absolute bottom-6 right-6 bg-slate-900/80 backdrop-blur-sm px-3 py-1 rounded-full text-white text-[10px] font-black uppercase tracking-widest z-30 flex items-center gap-2">
           <Crosshair size={10} className="text-blue-400" />
-          Zoom: {zoom}x
+          Zoom: {zoom.toFixed(1)}x
         </div>
       </div>
     </div>

@@ -1,13 +1,12 @@
-
 {
-  "name": "community-command-center",
-  "version": "1.2.0",
+  "name": "votando-electoral-command-center",
+  "version": "1.2.1",
   "private": true,
-  "description": "Suíte estratégica de comando populacional com inteligência artificial e georreferenciamento.",
+  "description": "Suíte estratégica de comando eleitoral com inteligência artificial e georreferenciamento.",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {

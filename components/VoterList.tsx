@@ -24,7 +24,11 @@ import {
   CheckSquare,
   Square,
   Trash2,
-  ListFilter
+  ListFilter,
+  Download,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { MOCK_VOTERS } from '../constants';
 import { SupportLevel, Voter } from '../types';
@@ -399,6 +403,14 @@ const CreateVoterModal: React.FC<CreateModalProps> = ({ onClose, onSave }) => {
   );
 };
 
+type SortKey = 'name' | 'socioEconomic' | 'interests' | 'neighborhood' | 'supportLevel' | 'lastContact';
+type SortDirection = 'asc' | 'desc';
+
+interface SortConfig {
+  key: SortKey;
+  direction: SortDirection;
+}
+
 const VoterList: React.FC = () => {
   const [voters, setVoters] = useState<Voter[]>(MOCK_VOTERS);
   const [searchTerm, setSearchTerm] = useState('');
@@ -407,6 +419,7 @@ const VoterList: React.FC = () => {
   const [selectedVoter, setSelectedVoter] = useState<Voter | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedVoterIds, setSelectedVoterIds] = useState<Set<string>>(new Set());
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
   const { showToast } = useToast();
 
   const votingZonesData = useMemo(() => {
@@ -430,8 +443,16 @@ const VoterList: React.FC = () => {
     }
   };
 
+  const handleRequestSort = (key: SortKey) => {
+    let direction: SortDirection = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   const filteredVoters = useMemo(() => {
-    return voters.filter(v => {
+    let result = voters.filter(v => {
       const matchesSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             v.votingZone.includes(searchTerm) ||
                             v.votingSection.includes(searchTerm);
@@ -439,7 +460,35 @@ const VoterList: React.FC = () => {
       const matchesSupport = selectedSupportLevel === '' || v.supportLevel === selectedSupportLevel;
       return matchesSearch && matchesZone && matchesSupport;
     });
-  }, [voters, searchTerm, selectedZone, selectedSupportLevel]);
+
+    // Custom sorting weight for support level
+    const supportLevelWeight: Record<SupportLevel, number> = {
+      [SupportLevel.LOYAL]: 0,
+      [SupportLevel.INDECISIVE]: 1,
+      [SupportLevel.NEUTRAL]: 2,
+      [SupportLevel.OPPOSITION]: 3
+    };
+
+    result.sort((a, b) => {
+      let valA: any = a[sortConfig.key as keyof Voter] || '';
+      let valB: any = b[sortConfig.key as keyof Voter] || '';
+
+      // Special handling for nested or complex fields
+      if (sortConfig.key === 'interests') {
+        valA = a.interests.length;
+        valB = b.interests.length;
+      } else if (sortConfig.key === 'supportLevel') {
+        valA = supportLevelWeight[a.supportLevel];
+        valB = supportLevelWeight[b.supportLevel];
+      }
+
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [voters, searchTerm, selectedZone, selectedSupportLevel, sortConfig]);
 
   const handleSaveNewVoter = (newData: any) => {
     const newVoter: Voter = {
@@ -466,7 +515,7 @@ const VoterList: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedVoterIds.size === filteredVoters.length) {
+    if (selectedVoterIds.size === filteredVoters.length && filteredVoters.length > 0) {
       setSelectedVoterIds(new Set());
     } else {
       setSelectedVoterIds(new Set(filteredVoters.map(v => v.id)));
@@ -499,6 +548,46 @@ const VoterList: React.FC = () => {
     setVoters(remaining);
     setSelectedVoterIds(new Set());
     showToast(`${count} registros removidos da base.`, 'error');
+  };
+
+  const handleExportCSV = () => {
+    if (filteredVoters.length === 0) {
+      showToast("Nenhum dado para exportar.", "info");
+      return;
+    }
+
+    const headers = ["ID", "Nome", "Idade", "Gênero", "Bairro", "Zona", "Seção", "Nível de Apoio", "Último Contato", "Telefone", "Interesses"];
+    const csvRows = filteredVoters.map(v => [
+      v.id,
+      v.name,
+      v.age,
+      v.gender,
+      v.neighborhood,
+      v.votingZone,
+      v.votingSection,
+      v.supportLevel,
+      v.lastContact,
+      v.phone,
+      `"${v.interests.join(', ')}"`
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...csvRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `votando_eleitores_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast("Base de eleitores exportada com sucesso!", "success");
+  };
+
+  const SortIndicator = ({ column }: { column: SortKey }) => {
+    if (sortConfig.key !== column) return <ArrowUpDown size={12} className="opacity-30 group-hover:opacity-100" />;
+    return sortConfig.direction === 'asc' ? <ChevronUp size={14} className="text-blue-600" /> : <ChevronDown size={14} className="text-blue-600" />;
   };
 
   return (
@@ -622,12 +711,21 @@ const VoterList: React.FC = () => {
             </div>
           </div>
 
-          <button 
-            onClick={() => setIsCreateModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-500/10 transition-all active:scale-[0.97]"
-          >
-            <Plus size={18} /> Novo Cadastro
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button 
+              onClick={handleExportCSV}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-all active:scale-[0.97]"
+              title="Exportar lista atual filtrada para CSV"
+            >
+              <Download size={18} className="text-slate-400" /> <span className="hidden sm:inline">Exportar CSV</span>
+            </button>
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-500/10 transition-all active:scale-[0.97]"
+            >
+              <Plus size={18} /> Novo Cadastro
+            </button>
+          </div>
         </div>
       </div>
 
@@ -644,12 +742,42 @@ const VoterList: React.FC = () => {
                   )}
                 </button>
               </th>
-              <th className="px-6 py-4">Eleitor</th>
-              <th className="px-6 py-4">Socioeconômico</th>
-              <th className="px-6 py-4">Interesses</th>
-              <th className="px-6 py-4">Localização Eleitoral</th>
-              <th className="px-6 py-4">Nível de Apoio</th>
-              <th className="px-6 py-4">Último Contato</th>
+              <th className="px-6 py-4 cursor-pointer group" onClick={() => handleRequestSort('name')}>
+                <div className="flex items-center gap-2">
+                  Eleitor
+                  <SortIndicator column="name" />
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer group" onClick={() => handleRequestSort('socioEconomic')}>
+                <div className="flex items-center gap-2">
+                  Socioeconômico
+                  <SortIndicator column="socioEconomic" />
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer group" onClick={() => handleRequestSort('interests')}>
+                <div className="flex items-center gap-2">
+                  Interesses
+                  <SortIndicator column="interests" />
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer group" onClick={() => handleRequestSort('neighborhood')}>
+                <div className="flex items-center gap-2">
+                  Localização Eleitoral
+                  <SortIndicator column="neighborhood" />
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer group" onClick={() => handleRequestSort('supportLevel')}>
+                <div className="flex items-center gap-2">
+                  Nível de Apoio
+                  <SortIndicator column="supportLevel" />
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer group" onClick={() => handleRequestSort('lastContact')}>
+                <div className="flex items-center gap-2">
+                  Último Contato
+                  <SortIndicator column="lastContact" />
+                </div>
+              </th>
               <th className="px-6 py-4 text-center">Ações</th>
             </tr>
           </thead>
