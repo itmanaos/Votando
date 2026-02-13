@@ -4,25 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Votando - Electoral Command Center</title>
-    <meta name="description" content="Suíte estratégica de comando eleitoral com análise georreferenciada.">
+    <meta name="description" content="Suíte estratégica de comando eleitoral com inteligência artificial e análise georreferenciada.">
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3635/3635836.png">
+    
+    <!-- Tailwind CSS via CDN para prototipagem e deploy rápido -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-<script type="importmap">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Transições suaves para navegação */
+        .page-transition { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
+    <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.460.0",
+    "recharts": "https://esm.sh/recharts@^2.13.3",
+    "react": "https://esm.sh/react@^19.0.0",
+    "react-dom": "https://esm.sh/react-dom@^19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@^19.0.0/client",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "recharts": "https://esm.sh/recharts@^3.7.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "vite": "https://esm.sh/vite@^7.3.1"
   }
 }
 </script>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
