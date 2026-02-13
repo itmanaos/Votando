@@ -1,24 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
-import { Users, Target, UserPlus, FileSearch, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
-import { MOCK_VOTERS, MOCK_TEAMS, MOCK_POLLS } from '../constants';
-import { getCampaignInsights } from '../geminiService';
+import React from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Users, Target, UserPlus, FileSearch, TrendingUp } from 'lucide-react';
+import { MOCK_VOTERS, MOCK_POLLS } from '../constants';
 
 const Dashboard: React.FC = () => {
-  const [insights, setInsights] = useState<{insight: string, action: string}[]>([]);
-  const [loadingInsights, setLoadingInsights] = useState(false);
-
-  useEffect(() => {
-    const fetchInsights = async () => {
-      setLoadingInsights(true);
-      const res = await getCampaignInsights(MOCK_VOTERS, MOCK_POLLS);
-      setInsights(res);
-      setLoadingInsights(false);
-    };
-    fetchInsights();
-  }, []);
-
   const stats = [
     { label: 'Eleitores', value: '4.2k', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
     { label: 'Apoiadores', value: '840', icon: UserPlus, color: 'text-teal-600', bg: 'bg-teal-100' },
@@ -35,93 +21,64 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header & AI Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {stats.map((s, idx) => (
-              <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                <div className={`${s.bg} ${s.color} w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>
-                  <s.icon size={20} />
-                </div>
-                <p className="text-slate-500 text-sm font-medium">{s.label}</p>
-                <h3 className="text-2xl font-bold text-slate-800">{s.value}</h3>
-              </div>
-            ))}
+      {/* Header Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((s, idx) => (
+          <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all group">
+            <div className={`${s.bg} ${s.color} w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 shadow-sm`}>
+              <s.icon size={24} />
+            </div>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{s.label}</p>
+            <h3 className="text-3xl font-black text-slate-800 mt-1">{s.value}</h3>
           </div>
-        </div>
-
-        <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Zap size={80} />
-          </div>
-          <div className="flex items-center gap-2 mb-4">
-            <Zap className="text-amber-400" size={20} />
-            <h3 className="font-bold text-lg">IA: Insights Estratégicos</h3>
-          </div>
-          <div className="space-y-4">
-            {loadingInsights ? (
-              <div className="animate-pulse flex space-x-4">
-                <div className="flex-1 space-y-4 py-1">
-                  <div className="h-4 bg-slate-700 rounded w-3/4"></div>
-                  <div className="h-4 bg-slate-700 rounded"></div>
-                </div>
-              </div>
-            ) : (
-              insights.map((ins, i) => (
-                <div key={i} className="text-sm border-l-2 border-amber-400 pl-3 py-1">
-                  <p className="font-medium text-slate-100">{ins.insight}</p>
-                  <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">Ação: {ins.action}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-8">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">
               <TrendingUp size={20} className="text-blue-500" />
               Evolução Intenção de Voto
             </h3>
-            <select className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none">
+            <select className="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none hover:bg-slate-100 transition-colors">
               <option>Últimos 3 Meses</option>
               <option>Semana Atual</option>
             </select>
           </div>
-          <div className="h-[250px] w-full">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={MOCK_POLLS}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Line type="monotone" dataKey="candidateA" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 4 }} activeDot={{ r: 6 }} name="Nosso Candidato" />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                />
+                <Line type="monotone" dataKey="candidateA" stroke="#3b82f6" strokeWidth={4} dot={{ fill: '#3b82f6', r: 5, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 7 }} name="Nosso Candidato" />
                 <Line type="monotone" dataKey="candidateB" stroke="#ef4444" strokeWidth={2} dot={{ fill: '#ef4444', r: 3 }} name="Oponente" />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-           <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+           <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-8">
             <Users size={20} className="text-teal-500" />
-            Nível de Apoio (Base Cadastrada)
+            Distribuição de Apoio
           </h3>
-          <div className="flex items-center">
-            <div className="h-[250px] w-1/2">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="h-[250px] w-full sm:w-1/2">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
+                    innerRadius={65}
+                    outerRadius={90}
+                    paddingAngle={8}
                     dataKey="value"
                   >
                     {pieData.map((entry, index) => (
@@ -132,14 +89,14 @@ const Dashboard: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="w-1/2 space-y-3 pl-4">
+            <div className="w-full sm:w-1/2 space-y-3">
               {pieData.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-white transition-all">
+                  <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-sm text-slate-600">{item.name}</span>
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{item.name}</span>
                   </div>
-                  <span className="text-sm font-bold text-slate-800">{((item.value / 1000) * 100).toFixed(0)}%</span>
+                  <span className="text-sm font-black text-slate-800">{((item.value / 1000) * 100).toFixed(0)}%</span>
                 </div>
               ))}
             </div>
