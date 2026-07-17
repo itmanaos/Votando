@@ -28,7 +28,8 @@ import {
   Download,
   ArrowUpDown,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 import { MOCK_VOTERS } from '../constants';
 import { SupportLevel, Voter } from '../types';
@@ -491,14 +492,44 @@ const VoterList: React.FC = () => {
   }, [voters, searchTerm, selectedZone, selectedSupportLevel, sortConfig]);
 
   const handleSaveNewVoter = (newData: any) => {
+    // 1. Validação de Dados Básicos
+    if (!newData.name.trim() || !newData.phone.trim()) {
+      showToast("Nome e telefone são obrigatórios para o cadastro.", "error");
+      return;
+    }
+
+    const cleanPhone = newData.phone.replace(/\D/g, '');
+    const cleanName = newData.name.trim().toLowerCase();
+
+    // 2. Validação de Cadastro Duplicado
+    const isDuplicate = voters.some(v => 
+      v.phone.replace(/\D/g, '') === cleanPhone || 
+      v.name.trim().toLowerCase() === cleanName
+    );
+
+    if (isDuplicate) {
+      showToast("Erro: Já existe um eleitor cadastrado com este nome ou telefone.", "error");
+      return;
+    }
+
+    // 3. Validação de Idade e Zona/Seção
+    const ageNum = parseInt(newData.age);
+    if (isNaN(ageNum) || ageNum < 16) {
+      showToast("A idade mínima para cadastro eleitoral é 16 anos.", "error");
+      return;
+    }
+
+    // 4. Criação do Registro
     const newVoter: Voter = {
       ...newData,
       id: Math.random().toString(36).substr(2, 9),
-      age: parseInt(newData.age),
+      name: newData.name.trim(), // Salva formatado corretamente
+      age: ageNum,
       lastContact: new Date().toISOString().split('T')[0],
       leaderId: 'L1',
       coordinates: { lat: -23.55, lng: -46.63 }
     };
+
     setVoters([newVoter, ...voters]);
     setIsCreateModalOpen(false);
     showToast(`Eleitor ${newVoter.name} cadastrado com sucesso!`, 'success');

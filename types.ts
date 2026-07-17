@@ -39,7 +39,6 @@ export interface TeamMember {
   phone: string;
 }
 
-// Novos tipos para o Módulo de Pesquisas
 export enum QuestionType {
   TEXT = 'TEXTO',
   YES_NO = 'SIM/NÃO',
@@ -56,7 +55,7 @@ export interface Question {
   id: string;
   text: string;
   type: QuestionType;
-  options?: string[]; // Apenas para Múltipla Escolha
+  options?: string[];
   required: boolean;
 }
 
@@ -76,7 +75,7 @@ export interface PollResult {
   id: string;
   date: string;
   region: string;
-  candidateA: number; // Percentage
+  candidateA: number;
   candidateB: number;
   undecided: number;
   sampleSize: number;
@@ -89,4 +88,40 @@ export interface VotingStation {
   voterCount: number;
   coordinates: { lat: number; lng: number };
   strategicImportance: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
+export interface CandidateResult {
+  id: string;
+  name: string;
+  party: string;
+  votes: number;
+  percentage: number;
+  isMain: boolean;
+  color: string;
+}
+
+export interface TallyStats {
+  sectionsTotal: number;
+  sectionsCounted: number;
+  votersTotal: number;
+  votersPresent: number;
+  validVotes: number;
+  blankVotes: number;
+  nullVotes: number;
+  lastUpdate: string;
+}
+
+// Novos tipos para Apuração Paralela (Fiscais)
+export interface BallotReport {
+  id: string;
+  zone: string;
+  section: string;
+  votesCandidateA: number;
+  votesCandidateB: number;
+  votesOthers: number;
+  blankVotes: number;
+  nullVotes: number;
+  fiscalName: string;
+  timestamp: string;
+  photoUrl?: string;
 }

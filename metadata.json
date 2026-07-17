@@ -3,5 +3,6 @@
   "description": "A high-performance political campaign management suite with real-time analytics, voter tracking, team coordination, and georeferenced intelligence.",
   "requestFramePermissions": [
     "geolocation"
-  ]
+  ],
+  "majorCapabilities": []
 }

@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, Map as MapIcon, Shield, BarChart3, UsersRound, Settings, Menu, X, Bell, User, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, Map as MapIcon, Shield, BarChart3, UsersRound, Settings, Menu, X, Bell, User, ClipboardList, Vote } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import VoterList from './components/VoterList';
 import MapView from './components/MapView';
 import Teams from './components/Teams';
 import Polls from './components/Polls';
+import VotingResults from './components/VotingResults';
 import { UserRole } from './types';
 import { ToastProvider } from './components/Toast';
 
@@ -19,6 +20,7 @@ const AppContent: React.FC = () => {
     { id: 'voters', label: 'Eleitores', icon: Users, roles: [UserRole.ADMIN, UserRole.LEADER, UserRole.SUPPORTER] },
     { id: 'teams', label: 'Equipes', icon: UsersRound, roles: [UserRole.ADMIN, UserRole.LEADER] },
     { id: 'polls', label: 'Pesquisas', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.LEADER] },
+    { id: 'tally', label: 'Apuração', icon: Vote, roles: [UserRole.ADMIN, UserRole.LEADER] },
     { id: 'maps', label: 'Mapas & BI', icon: MapIcon, roles: [UserRole.ADMIN, UserRole.LEADER] },
     { id: 'security', label: 'Controle', icon: Shield, roles: [UserRole.ADMIN] },
   ];
@@ -31,6 +33,7 @@ const AppContent: React.FC = () => {
       case 'voters': return <VoterList />;
       case 'teams': return <Teams />;
       case 'polls': return <Polls />;
+      case 'tally': return <VotingResults />;
       case 'maps': return <MapView />;
       default: return (
         <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400">

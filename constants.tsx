@@ -1,5 +1,5 @@
 
-import { Voter, SupportLevel, TeamMember, UserRole, PollResult, VotingStation, Survey, SurveyType, QuestionType } from './types';
+import { Voter, SupportLevel, TeamMember, UserRole, PollResult, VotingStation, Survey, SurveyType, QuestionType, CandidateResult, TallyStats } from './types';
 
 // Palette Colors inspired by Votando (Blue/Teal/White)
 export const THEME = {
@@ -62,3 +62,20 @@ export const MOCK_STATIONS: VotingStation[] = [
   { id: 'S1', name: 'Escola Municipal Central', address: 'Rua das Flores, 123', voterCount: 4500, coordinates: { lat: -23.5505, lng: -46.6333 }, strategicImportance: 'HIGH' },
   { id: 'S2', name: 'Colégio Estadual Norte', address: 'Av. Paulista, 900', voterCount: 2800, coordinates: { lat: -23.5611, lng: -46.6555 }, strategicImportance: 'MEDIUM' },
 ];
+
+export const MOCK_CANDIDATES: CandidateResult[] = [
+  { id: 'C1', name: 'Nosso Candidato', party: 'PVOT (45)', votes: 48293, percentage: 52.4, isMain: true, color: '#2563eb' },
+  { id: 'C2', name: 'Oponente Principal', party: 'PROG (10)', votes: 39582, percentage: 42.9, isMain: false, color: '#ef4444' },
+  { id: 'C3', name: 'Outros', party: '-', votes: 4281, percentage: 4.7, isMain: false, color: '#94a3b8' },
+];
+
+export const MOCK_TALLY_STATS: TallyStats = {
+  sectionsTotal: 450,
+  sectionsCounted: 384,
+  votersTotal: 120000,
+  votersPresent: 95000,
+  validVotes: 92156,
+  blankVotes: 1244,
+  nullVotes: 1600,
+  lastUpdate: '2024-10-06 21:45:12'
+};
