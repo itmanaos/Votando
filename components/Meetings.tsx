@@ -6,7 +6,8 @@ import {
   ChevronRight, Lock, Eye, AlertCircle, RefreshCw, X, Download,
   Volume2, Utensils, Droplets, Wrench, PlayCircle, Archive, Award,
   Info, ShieldCheck, Check, MessageSquare, Compass, Map as MapIcon,
-  Layers, Radio
+  Layers, Radio, Calculator, Sliders, Copy, Share2, TrendingUp,
+  BarChart3, AlertOctagon, CheckCheck, UserPlus, FileSpreadsheet
 } from 'lucide-react';
 import { 
   Meeting, MeetingType, MeetingStatus, StepStatus, RACIRole, 
@@ -85,18 +86,35 @@ export const Meetings: React.FC = () => {
     invoiceFileName: ''
   });
 
-  // New Leader CheckIn Form State
-  const [newLeader, setNewLeader] = useState({
-    leaderName: '',
-    role: '',
-    territory: 'Zona Sul',
-    phone: '',
-    expectedSupporters: 20
-  });
-
-  // Density Calculation State
+  // Density & Jacobs Calculation State
+  const [jacobsMode, setJacobsMode] = useState<'global' | 'sectors'>('global');
   const [densityFactor, setDensityFactor] = useState<number>(2.0);
   const [venueAreaInput, setVenueAreaInput] = useState<number>(180);
+  const [jacobsSectors, setJacobsSectors] = useState<Array<{ id: string; name: string; areaM2: number; densityFactor: number }>>([
+    { id: 'sec_1', name: 'Frente do Palco / VIP', areaM2: 45, densityFactor: 3.5 },
+    { id: 'sec_2', name: 'Plenária Central / Pista', areaM2: 100, densityFactor: 2.0 },
+    { id: 'sec_3', name: 'Fundo & Acesso / Tenda', areaM2: 35, densityFactor: 1.0 },
+  ]);
+
+  // Dedicated Leader CheckIn Form State
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [selectedLeaderIdForCheckIn, setSelectedLeaderIdForCheckIn] = useState<string>('new');
+  const [checkInFormData, setCheckInFormData] = useState({
+    leaderName: '',
+    role: 'Liderança Comunitária',
+    territory: 'Zona Sul',
+    phone: '',
+    expectedSupporters: 20,
+    actualSupportersPresent: 20,
+    sector: 'Plenária Central / Pista',
+    status: 'PRESENTE' as LeaderCheckIn['status'],
+    notes: ''
+  });
+
+  // Filters for Leaders Check-in Table
+  const [leaderSearchQuery, setLeaderSearchQuery] = useState('');
+  const [leaderFilterStatus, setLeaderFilterStatus] = useState<string>('ALL');
+  const [leaderFilterSector, setLeaderFilterSector] = useState<string>('ALL');
 
   // Currently Selected Meeting
   const currentMeeting = useMemo(() => {
@@ -215,7 +233,7 @@ export const Meetings: React.FC = () => {
     });
   };
 
-  // Handle Leader Check-In Status Change
+  // Handle Leader Check-In Status Change with automatic time stamping
   const handleLeaderStatusChange = (leaderId: string, status: LeaderCheckIn['status']) => {
     setMeetings(prev => prev.map(m => {
       if (m.id !== currentMeeting.id) return m;
@@ -224,7 +242,7 @@ export const Meetings: React.FC = () => {
           return {
             ...l,
             status,
-            checkInTime: status === 'PRESENTE' ? new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : l.checkInTime
+            checkInTime: status === 'PRESENTE' ? (l.checkInTime || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })) : l.checkInTime
           };
         }
         return l;
@@ -233,7 +251,7 @@ export const Meetings: React.FC = () => {
       const leadersPresent = updatedLeaders.filter(l => l.status === 'PRESENTE').length;
       const supportersMobilized = updatedLeaders
         .filter(l => l.status === 'PRESENTE' || l.status === 'CONFIRMADO')
-        .reduce((acc, curr) => acc + curr.expectedSupporters, 0);
+        .reduce((acc, curr) => acc + (curr.actualSupportersPresent !== undefined ? curr.actualSupportersPresent : curr.expectedSupporters), 0);
 
       return {
         ...m,
@@ -247,9 +265,208 @@ export const Meetings: React.FC = () => {
     }));
 
     addToast({
-      type: 'info',
-      title: 'Check-in de Liderança Registrado',
-      message: `Status atualizado para ${status}.`
+      type: status === 'PRESENTE' ? 'success' : 'info',
+      title: 'Status de Liderança Atualizado',
+      message: `Check-in marcado como ${status}.`
+    });
+  };
+
+  // Handle Save / Register Leader Check-In from dedicated form
+  const handleSaveLeaderCheckIn = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkInFormData.leaderName.trim()) {
+      addToast({ type: 'error', title: 'Nome Obrigatório', message: 'Informe o nome da liderança ou multiplicador.' });
+      return;
+    }
+
+    const isNew = selectedLeaderIdForCheckIn === 'new';
+    const currentTimeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    setMeetings(prev => prev.map(m => {
+      if (m.id !== currentMeeting.id) return m;
+
+      let updatedLeaders: LeaderCheckIn[] = [];
+
+      if (isNew) {
+        const newLeaderObj: LeaderCheckIn = {
+          id: 'lc_' + Date.now(),
+          leaderName: checkInFormData.leaderName.trim(),
+          role: checkInFormData.role.trim() || 'Liderança Comunitária',
+          territory: checkInFormData.territory.trim() || 'Zona Geral',
+          phone: checkInFormData.phone.trim() || '(11) 98888-0000',
+          expectedSupporters: Number(checkInFormData.expectedSupporters) || 20,
+          actualSupportersPresent: Number(checkInFormData.actualSupportersPresent) || Number(checkInFormData.expectedSupporters) || 20,
+          sector: checkInFormData.sector,
+          status: checkInFormData.status,
+          checkInTime: checkInFormData.status === 'PRESENTE' ? currentTimeStr : undefined,
+          notes: checkInFormData.notes
+        };
+        updatedLeaders = [newLeaderObj, ...m.leadersCheckIn];
+      } else {
+        updatedLeaders = m.leadersCheckIn.map(l => {
+          if (l.id === selectedLeaderIdForCheckIn) {
+            return {
+              ...l,
+              leaderName: checkInFormData.leaderName.trim(),
+              role: checkInFormData.role.trim(),
+              territory: checkInFormData.territory.trim(),
+              phone: checkInFormData.phone.trim(),
+              expectedSupporters: Number(checkInFormData.expectedSupporters) || l.expectedSupporters,
+              actualSupportersPresent: Number(checkInFormData.actualSupportersPresent) || Number(checkInFormData.expectedSupporters),
+              sector: checkInFormData.sector,
+              status: checkInFormData.status,
+              checkInTime: checkInFormData.status === 'PRESENTE' ? (l.checkInTime || currentTimeStr) : l.checkInTime,
+              notes: checkInFormData.notes
+            };
+          }
+          return l;
+        });
+      }
+
+      const leadersPresent = updatedLeaders.filter(l => l.status === 'PRESENTE').length;
+      const supportersMobilized = updatedLeaders
+        .filter(l => l.status === 'PRESENTE' || l.status === 'CONFIRMADO')
+        .reduce((acc, curr) => acc + (curr.actualSupportersPresent !== undefined ? curr.actualSupportersPresent : curr.expectedSupporters), 0);
+
+      return {
+        ...m,
+        leadersCheckIn: updatedLeaders,
+        attendanceData: {
+          ...m.attendanceData,
+          leadersPresentCount: leadersPresent,
+          totalSupportersMobilized: supportersMobilized
+        }
+      };
+    }));
+
+    setIsCheckInModalOpen(false);
+    addToast({
+      type: 'success',
+      title: isNew ? 'Check-in de Liderança Cadastrado' : 'Check-in Atualizado',
+      message: `${checkInFormData.leaderName} registrado com status ${checkInFormData.status}.`
+    });
+
+    // Reset Form for next usage
+    setSelectedLeaderIdForCheckIn('new');
+    setCheckInFormData({
+      leaderName: '',
+      role: 'Liderança Comunitária',
+      territory: 'Zona Sul',
+      phone: '',
+      expectedSupporters: 20,
+      actualSupportersPresent: 20,
+      sector: 'Plenária Central / Pista',
+      status: 'PRESENTE',
+      notes: ''
+    });
+  };
+
+  // Open Check-in Modal for specific leader
+  const handleOpenEditLeaderCheckIn = (leader: LeaderCheckIn) => {
+    setSelectedLeaderIdForCheckIn(leader.id);
+    setCheckInFormData({
+      leaderName: leader.leaderName,
+      role: leader.role,
+      territory: leader.territory,
+      phone: leader.phone,
+      expectedSupporters: leader.expectedSupporters,
+      actualSupportersPresent: leader.actualSupportersPresent !== undefined ? leader.actualSupportersPresent : leader.expectedSupporters,
+      sector: leader.sector || 'Plenária Central / Pista',
+      status: leader.status,
+      notes: leader.notes || ''
+    });
+    setIsCheckInModalOpen(true);
+  };
+
+  // Jacobs Sector Modifiers
+  const handleAddJacobsSector = () => {
+    const newId = 'sec_' + Date.now();
+    setJacobsSectors(prev => [
+      ...prev,
+      { id: newId, name: `Setor ${prev.length + 1}: Ala Adicional`, areaM2: 50, densityFactor: 2.0 }
+    ]);
+  };
+
+  const handleRemoveJacobsSector = (id: string) => {
+    if (jacobsSectors.length <= 1) {
+      addToast({ type: 'info', title: 'Mínimo de 1 Setor', message: 'Mantenha ao menos um setor configurado.' });
+      return;
+    }
+    setJacobsSectors(prev => prev.filter(s => s.id !== id));
+  };
+
+  const handleUpdateJacobsSector = (id: string, field: 'name' | 'areaM2' | 'densityFactor', value: any) => {
+    setJacobsSectors(prev => prev.map(s => {
+      if (s.id === id) {
+        return { ...s, [field]: value };
+      }
+      return s;
+    }));
+  };
+
+  // Apply Jacobs Estimate to Confirmed Attendance
+  const handleApplyJacobsToMeeting = (calculatedCount: number, avgDensity: number, totalArea: number) => {
+    setMeetings(prev => prev.map(m => {
+      if (m.id !== currentMeeting.id) return m;
+      return {
+        ...m,
+        confirmedAttendance: calculatedCount,
+        attendanceData: {
+          ...m.attendanceData,
+          venueAreaM2: totalArea,
+          densityFactor: avgDensity,
+          calculatedDensityCount: calculatedCount
+        }
+      };
+    }));
+
+    addToast({
+      type: 'success',
+      title: 'Estimativa de Jacobs Aplicada',
+      message: `Público do evento atualizado para ${calculatedCount} pessoas (${avgDensity.toFixed(1)} pax/m² em ${totalArea} m²).`
+    });
+  };
+
+  // Copy Full Technical Crowd & Check-in Bulletin to Clipboard
+  const handleCopyJacobsBulletin = (calculatedCount: number, avgDensity: number, totalArea: number, leadersPresentCount: number, supportersCount: number) => {
+    const occupancyPercent = currentMeeting.venueCapacity > 0 ? Math.round((calculatedCount / currentMeeting.venueCapacity) * 100) : 0;
+    const bulletinText = `=====================================================
+📋 BOLETIM TÉCNICO DE AUDITORIA DE PÚBLICO (MÉTODO DE JACOBS)
+=====================================================
+Evento: ${currentMeeting.title}
+Tipo: ${currentMeeting.type} | Zona Eleitoral: ${currentMeeting.votingZone}
+Data: ${currentMeeting.date} às ${currentMeeting.startTime}
+Local: ${currentMeeting.venueName} (${currentMeeting.address}, ${currentMeeting.neighborhood})
+Coordenador Responsável: ${currentMeeting.coordinatorName}
+
+📊 1. AUDITORIA DE DENSIDADE (MÉTODO DE JACOBS):
+• Modo de Cálculo: ${jacobsMode === 'global' ? 'Área Global Integrada' : 'Multi-Setor / Quadrantes Ponderados'}
+• Área Útil Total Demarcada: ${totalArea} m²
+• Fator Médio de Densidade: ${avgDensity.toFixed(2)} pessoas/m²
+• Público Estimado pelo Método de Jacobs: ${calculatedCount} pessoas
+• Capacidade Máxima do Local (Alvará/Bombeiros): ${currentMeeting.venueCapacity} pessoas
+• Taxa de Ocupação: ${occupancyPercent}% (${occupancyPercent > 100 ? '⚠️ RISCO DE SUPERLOTAÇÃO' : '✅ DENTRO DOS LIMITES DE SEGURANÇA'})
+
+👥 2. CHECK-IN DE LIDERANÇAS & HEADCOUNT EM TEMPO REAL:
+• Lideranças Presentes no Local: ${leadersPresentCount} de ${currentMeeting.leadersCheckIn.length} cadastradas
+• Apoiadores Reportados pelas Lideranças: ${supportersCount} pessoas mobilizadas
+${jacobsMode === 'sectors' ? `\n📍 3. DETALHAMENTO POR SETOR (QUADRANTES):\n` + jacobsSectors.map(s => `  • ${s.name}: ${s.areaM2}m² × ${s.densityFactor} pax/m² = ${Math.round(s.areaM2 * s.densityFactor)} pessoas`).join('\n') : ''}
+
+Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de Eventos.
+=====================================================`;
+
+    navigator.clipboard.writeText(bulletinText).then(() => {
+      addToast({
+        type: 'success',
+        title: 'Boletim Copiado!',
+        message: 'Resumo técnico de densidade e check-in copiado para a área de transferência.'
+      });
+    }).catch(() => {
+      addToast({
+        type: 'info',
+        title: 'Boletim Gerado',
+        message: 'Resumo formatado pronto para compartilhamento.'
+      });
     });
   };
 
@@ -475,8 +692,35 @@ export const Meetings: React.FC = () => {
     }
   };
 
-  // Calculate live Jacobs Crowd Density
-  const calculatedJacobsPublic = Math.round(venueAreaInput * densityFactor);
+  // Calculate live Jacobs Crowd Density (Global vs Multi-Sector)
+  const jacobsGlobalTotal = Math.round(venueAreaInput * densityFactor);
+  const jacobsSectorsTotal = Math.round(jacobsSectors.reduce((acc, s) => acc + (s.areaM2 * s.densityFactor), 0));
+  const effectiveTotalArea = jacobsMode === 'global' ? venueAreaInput : jacobsSectors.reduce((acc, s) => acc + s.areaM2, 0);
+  const calculatedJacobsPublic = jacobsMode === 'global' ? jacobsGlobalTotal : jacobsSectorsTotal;
+  const effectiveAverageDensity = effectiveTotalArea > 0 ? parseFloat((calculatedJacobsPublic / effectiveTotalArea).toFixed(2)) : densityFactor;
+
+  // Lideranças Check-in Statistics
+  const leadersPresentList = currentMeeting.leadersCheckIn.filter(l => l.status === 'PRESENTE');
+  const leadersConfirmedList = currentMeeting.leadersCheckIn.filter(l => l.status === 'CONFIRMADO');
+  const leadersPresentCount = leadersPresentList.length;
+  const leadersTotalCount = currentMeeting.leadersCheckIn.length;
+  const actualSupportersPresentCount = leadersPresentList.reduce((acc, l) => acc + (l.actualSupportersPresent !== undefined ? l.actualSupportersPresent : l.expectedSupporters), 0);
+  const totalSupportersMobilizedCount = currentMeeting.leadersCheckIn
+    .filter(l => l.status === 'PRESENTE' || l.status === 'CONFIRMADO')
+    .reduce((acc, l) => acc + (l.actualSupportersPresent !== undefined ? l.actualSupportersPresent : l.expectedSupporters), 0);
+  
+  const venueOccupancyPercent = currentMeeting.venueCapacity > 0 ? Math.round((calculatedJacobsPublic / currentMeeting.venueCapacity) * 100) : 0;
+
+  // Filtered Leader Check-in List for the Table / Cards
+  const filteredLeadersCheckIn = useMemo(() => {
+    return currentMeeting.leadersCheckIn.filter(l => {
+      const q = leaderSearchQuery.toLowerCase();
+      const matchesSearch = !q || l.leaderName.toLowerCase().includes(q) || l.role.toLowerCase().includes(q) || l.territory.toLowerCase().includes(q) || (l.sector && l.sector.toLowerCase().includes(q));
+      const matchesStatus = leaderFilterStatus === 'ALL' || l.status === leaderFilterStatus;
+      const matchesSector = leaderFilterSector === 'ALL' || l.sector === leaderFilterSector;
+      return matchesSearch && matchesStatus && matchesSector;
+    });
+  }, [currentMeeting.leadersCheckIn, leaderSearchQuery, leaderFilterStatus, leaderFilterSector]);
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
@@ -1095,138 +1339,720 @@ export const Meetings: React.FC = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* SUBTAB 2: ATTENDANCE & JACOBS DENSITY CALCULATOR                          */}
+          {/* SUBTAB 2: CHECK-IN DE LIDERANÇAS & ESTIMATIVA JACOBS                       */}
           {/* ========================================================================= */}
           {activeSubTab === 'attendance' && (
             <div className="space-y-6">
               
-              {/* Public Estimation & Jacobs Method Interactive Tool */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-black text-slate-900">
-                      Auditoria de Público por Densidade (Método de Jacobs)
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Cálculo técnico padrão de aglomeração: Área útil (m²) × Fator de Concentração
-                    </p>
+              {/* Executive Overview Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* Jacobs Crowd Estimation Card */}
+                <div className="p-4 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-md space-y-2 relative overflow-hidden">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-blue-200">
+                      Método de Jacobs
+                    </span>
+                    <span className="px-2 py-0.5 bg-white/20 text-white text-[10px] font-bold rounded-md">
+                      {jacobsMode === 'global' ? 'Área Única' : `${jacobsSectors.length} Quadrantes`}
+                    </span>
                   </div>
-                  <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100 text-center min-w-[140px]">
-                    <span className="text-[10px] font-bold uppercase text-blue-600 tracking-wider block">Público Calculado</span>
-                    <span className="text-2xl font-black text-blue-700 tracking-tight">{calculatedJacobsPublic}</span>
-                    <span className="text-[10px] text-slate-500 block">pessoas estimadas</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black tracking-tight">{calculatedJacobsPublic.toLocaleString('pt-BR')}</span>
+                    <span className="text-xs text-blue-100 font-medium">pessoas estimadas</span>
+                  </div>
+                  <div className="pt-2 border-t border-white/15 flex items-center justify-between text-[11px] text-blue-100">
+                    <span>{effectiveTotalArea} m² de área total</span>
+                    <span>{effectiveAverageDensity.toFixed(1)} pax/m²</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Área Útil do Espaço (m²)</label>
-                    <input
-                      type="number"
-                      value={venueAreaInput}
-                      onChange={(e) => setVenueAreaInput(Math.max(1, Number(e.target.value)))}
-                      className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 font-bold"
+                {/* Leaders Check-In Card */}
+                <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">
+                      Lideranças Presentes
+                    </span>
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-md">
+                      {leadersTotalCount > 0 ? Math.round((leadersPresentCount / leadersTotalCount) * 100) : 0}% Check-in
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-slate-900">{leadersPresentCount}</span>
+                    <span className="text-xs text-slate-500 font-medium">de {leadersTotalCount} convidadas</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${leadersTotalCount > 0 ? (leadersPresentCount / leadersTotalCount) * 100 : 0}%` }}
                     />
                   </div>
+                </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">
-                      Fator de Densidade: <strong className="text-blue-600">{densityFactor} pessoas/m²</strong>
-                    </label>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="4.5"
-                      step="0.5"
-                      value={densityFactor}
-                      onChange={(e) => setDensityFactor(parseFloat(e.target.value))}
-                      className="w-full accent-blue-600 cursor-pointer"
+                {/* Supporters in Field Card */}
+                <div className="p-4 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">
+                      Apoiadores em Campo
+                    </span>
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-md">
+                      Meta: {totalSupportersMobilizedCount}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-blue-600">{actualSupportersPresentCount.toLocaleString('pt-BR')}</span>
+                    <span className="text-xs text-slate-500 font-medium">presentes reais</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    Base reportada pelos líderes no local
+                  </p>
+                </div>
+
+                {/* Venue Occupancy & Safety Card */}
+                <div className={`p-4 rounded-3xl border shadow-sm space-y-2 ${
+                  venueOccupancyPercent > 100 
+                    ? 'bg-rose-50 border-rose-200' 
+                    : venueOccupancyPercent > 85 
+                      ? 'bg-amber-50 border-amber-200' 
+                      : 'bg-white border-slate-100'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">
+                      Lotação do Espaço
+                    </span>
+                    <span className={`px-2 py-0.5 text-[10px] font-black rounded-md ${
+                      venueOccupancyPercent > 100 
+                        ? 'bg-rose-200 text-rose-800' 
+                        : venueOccupancyPercent > 85 
+                          ? 'bg-amber-200 text-amber-800' 
+                          : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      Cap. {currentMeeting.venueCapacity}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-3xl font-black ${
+                      venueOccupancyPercent > 100 ? 'text-rose-600' : venueOccupancyPercent > 85 ? 'text-amber-600' : 'text-slate-900'
+                    }`}>
+                      {venueOccupancyPercent}%
+                    </span>
+                    <span className="text-xs text-slate-500 font-medium">da capacidade</span>
+                  </div>
+                  <div className="w-full bg-slate-200/70 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        venueOccupancyPercent > 100 ? 'bg-rose-600' : venueOccupancyPercent > 85 ? 'bg-amber-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, venueOccupancyPercent)}%` }}
                     />
-                    <div className="flex justify-between text-[10px] text-slate-400">
-                      <span>Leve (1 p/m²)</span>
-                      <span>Média Sentada (2 p/m²)</span>
-                      <span>Alta Aglomeração (4 p/m²)</span>
-                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Leaders Check-In List */}
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
-                <div className="flex items-center justify-between">
+              {/* JACOBS DENSITY CALCULATOR ENGINE */}
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
-                    <h3 className="text-base font-black text-slate-900">
-                      Check-in de Lideranças & Multiplicadores
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded-md uppercase tracking-wider">
+                        Método de Jacobs (Herbert Jacobs, 1967)
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium">Padronização Técnica de Aglomeração</span>
+                    </div>
+                    <h3 className="text-base font-black text-slate-900 mt-1 flex items-center gap-2">
+                      <Calculator size={18} className="text-blue-600" />
+                      Motor de Estimativa de Densidade de Público
                     </h3>
-                    <p className="text-xs text-slate-400">
-                      Monitoramento de presença e capacidade de mobilização em campo
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Fórmula auditável: <span className="font-mono font-bold text-slate-800">Público = Área Útil (m²) × Densidade (pax/m²)</span>.
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => setIsAddLeaderModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs rounded-xl transition-all"
-                  >
-                    <Plus size={14} />
-                    Convidar Liderança
-                  </button>
+                  {/* Mode Selector & Quick Actions */}
+                  <div className="flex items-center flex-wrap gap-2">
+                    <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/60">
+                      <button
+                        type="button"
+                        onClick={() => setJacobsMode('global')}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                          jacobsMode === 'global' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Área Global Simples
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setJacobsMode('sectors')}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                          jacobsMode === 'sectors' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Multi-Setores / Quadrantes ({jacobsSectors.length})
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleApplyJacobsToMeeting(calculatedJacobsPublic, effectiveAverageDensity, effectiveTotalArea)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95"
+                    >
+                      <CheckCheck size={14} />
+                      Gravar no Evento
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyJacobsBulletin(calculatedJacobsPublic, effectiveAverageDensity, effectiveTotalArea, leadersPresentCount, actualSupportersPresentCount)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
+                      title="Copiar boletim técnico completo"
+                    >
+                      <Copy size={13} />
+                      Copiar Boletim
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-2.5">
-                  {currentMeeting.leadersCheckIn.map((leader) => (
-                    <div
-                      key={leader.id}
-                      className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-xs">{leader.leaderName}</span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
-                            {leader.role}
-                          </span>
-                          <span className="text-[10px] text-slate-400">• {leader.territory}</span>
+                {/* MODE A: GLOBAL AREA INPUT */}
+                {jacobsMode === 'global' ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {/* Left: Useful Area & Quick Presets */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <span>Área Útil Efetiva do Espaço</span>
+                            <span className="text-slate-400 font-normal">(sem obstáculos/palco)</span>
+                          </label>
+                          <span className="text-xs font-black text-blue-600">{venueAreaInput} m²</span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Meta mobilizada: <strong>{leader.expectedSupporters} apoiadores</strong>
-                          {leader.checkInTime && <span className="text-emerald-600 font-bold ml-2">• Check-in às {leader.checkInTime}</span>}
-                        </p>
+
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="10"
+                            max="50000"
+                            value={venueAreaInput}
+                            onChange={(e) => setVenueAreaInput(Math.max(1, Number(e.target.value)))}
+                            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 font-black text-slate-900 shadow-inner"
+                          />
+                          <span className="absolute right-3.5 top-2.5 text-xs font-bold text-slate-400">metros quadrados</span>
+                        </div>
+
+                        {/* Presets */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Presets Rápidos de Espaço</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {[80, 120, 180, 250, 350, 500, 800, 1200].map(preset => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setVenueAreaInput(preset)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                                  venueAreaInput === preset
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                {preset} m²
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={leader.status}
-                          onChange={(e) => handleLeaderStatusChange(leader.id, e.target.value as any)}
-                          className={`text-xs font-bold rounded-lg px-2.5 py-1 outline-none border cursor-pointer ${
-                            leader.status === 'PRESENTE'
-                              ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
-                              : leader.status === 'CONFIRMADO'
-                                ? 'bg-blue-100 border-blue-300 text-blue-800'
-                                : 'bg-slate-100 border-slate-200 text-slate-700'
-                          }`}
-                        >
-                          <option value="CONFIRMADO">CONFIRMADO</option>
-                          <option value="PRESENTE">PRESENTE</option>
-                          <option value="AUSENTE">AUSENTE</option>
-                          <option value="JUSTIFICADO">JUSTIFICADO</option>
-                        </select>
+                      {/* Right: Jacobs Density Factor Slider */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-800">
+                            Fator de Densidade (Método de Jacobs)
+                          </label>
+                          <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${
+                            densityFactor >= 4.0 
+                              ? 'bg-rose-100 text-rose-800' 
+                              : densityFactor >= 3.0 
+                                ? 'bg-amber-100 text-amber-800' 
+                                : densityFactor >= 2.0 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {densityFactor.toFixed(1)} pessoas/m²
+                          </span>
+                        </div>
 
-                        <a
-                          href={`https://wa.me/55${leader.phone.replace(/\D/g, '')}?text=Olá ${encodeURIComponent(leader.leaderName)}, confirmamos sua presença na ${encodeURIComponent(currentMeeting.title)}!`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors"
-                          title="Enviar WhatsApp"
-                        >
-                          <MessageSquare size={14} />
-                        </a>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="4.5"
+                          step="0.5"
+                          value={densityFactor}
+                          onChange={(e) => setDensityFactor(parseFloat(e.target.value))}
+                          className="w-full accent-blue-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
+                        />
+
+                        {/* Interactive Scale Descriptions */}
+                        <div className="grid grid-cols-4 gap-1 text-[10px] text-center font-medium">
+                          <div 
+                            onClick={() => setDensityFactor(1.0)}
+                            className={`p-1.5 rounded-lg cursor-pointer transition-all ${densityFactor === 1.0 ? 'bg-emerald-100 font-bold text-emerald-900 ring-1 ring-emerald-300' : 'bg-slate-50 text-slate-500'}`}
+                          >
+                            <span className="block font-black text-xs">1.0 p/m²</span>
+                            <span className="text-[9px]">Leve / Espaçado</span>
+                          </div>
+                          <div 
+                            onClick={() => setDensityFactor(2.0)}
+                            className={`p-1.5 rounded-lg cursor-pointer transition-all ${densityFactor === 2.0 ? 'bg-blue-100 font-bold text-blue-900 ring-1 ring-blue-300' : 'bg-slate-50 text-slate-500'}`}
+                          >
+                            <span className="block font-black text-xs">2.0 p/m²</span>
+                            <span className="text-[9px]">Média / Cadeiras</span>
+                          </div>
+                          <div 
+                            onClick={() => setDensityFactor(3.0)}
+                            className={`p-1.5 rounded-lg cursor-pointer transition-all ${densityFactor === 3.0 ? 'bg-amber-100 font-bold text-amber-900 ring-1 ring-amber-300' : 'bg-slate-50 text-slate-500'}`}
+                          >
+                            <span className="block font-black text-xs">3.0 p/m²</span>
+                            <span className="text-[9px]">Alta / Em Pé</span>
+                          </div>
+                          <div 
+                            onClick={() => setDensityFactor(4.0)}
+                            className={`p-1.5 rounded-lg cursor-pointer transition-all ${densityFactor === 4.0 ? 'bg-rose-100 font-bold text-rose-900 ring-1 ring-rose-300' : 'bg-slate-50 text-slate-500'}`}
+                          >
+                            <span className="block font-black text-xs">4.0 p/m²</span>
+                            <span className="text-[9px]">Comício Denso</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  ))}
 
-                  {currentMeeting.leadersCheckIn.length === 0 && (
-                    <p className="text-xs text-slate-400 text-center py-6">
-                      Nenhuma liderança cadastrada para check-in nesta reunião.
+                    {/* Result Formula Ribbon */}
+                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="text-xs text-slate-600">
+                        <strong className="text-slate-900">Equação:</strong> {venueAreaInput} m² × {densityFactor.toFixed(1)} pax/m² = <span className="font-black text-blue-700 text-sm">{jacobsGlobalTotal} pessoas</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {venueOccupancyPercent > 100 && (
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                            <AlertTriangle size={13} />
+                            Alerta: Ultrapassa a capacidade do local ({currentMeeting.venueCapacity} pax)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* MODE B: MULTI-SECTORS / QUADRANTS */
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-500">
+                        Permite granularizar a estimativa por quadrantes reais (ex: palco com alta densidade, meio moderado, fundo com menor ocupação).
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddJacobsSector}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl transition-all"
+                      >
+                        <Plus size={13} />
+                        Adicionar Setor
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {jacobsSectors.map((sector, index) => {
+                        const sectorSubtotal = Math.round(sector.areaM2 * sector.densityFactor);
+                        return (
+                          <div 
+                            key={sector.id}
+                            className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3"
+                          >
+                            <div className="flex items-center gap-2.5 flex-1 min-w-[200px]">
+                              <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center shrink-0">
+                                {index + 1}
+                              </span>
+                              <input
+                                type="text"
+                                value={sector.name}
+                                onChange={(e) => handleUpdateJacobsSector(sector.id, 'name', e.target.value)}
+                                className="w-full px-2.5 py-1 text-xs bg-white border border-slate-200 rounded-lg font-bold text-slate-800 outline-none focus:border-blue-500"
+                                placeholder="Nome do Setor / Quadrante"
+                              />
+                            </div>
+
+                            <div className="flex items-center flex-wrap gap-3">
+                              <div className="flex items-center gap-1.5">
+                                <label className="text-[11px] font-bold text-slate-500">Área:</label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={sector.areaM2}
+                                    onChange={(e) => handleUpdateJacobsSector(sector.id, 'areaM2', Math.max(1, Number(e.target.value)))}
+                                    className="w-20 px-2 py-1 text-xs bg-white border border-slate-200 rounded-lg font-bold text-slate-800 outline-none"
+                                  />
+                                  <span className="text-[10px] text-slate-400 ml-1">m²</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <label className="text-[11px] font-bold text-slate-500">Densidade:</label>
+                                <select
+                                  value={sector.densityFactor}
+                                  onChange={(e) => handleUpdateJacobsSector(sector.id, 'densityFactor', parseFloat(e.target.value))}
+                                  className="px-2 py-1 text-xs bg-white border border-slate-200 rounded-lg font-bold text-slate-800 outline-none cursor-pointer"
+                                >
+                                  <option value={1.0}>1.0 pax/m² (Leve)</option>
+                                  <option value={1.5}>1.5 pax/m² (Média-Baixa)</option>
+                                  <option value={2.0}>2.0 pax/m² (Plenária)</option>
+                                  <option value={2.5}>2.5 pax/m² (Moderada)</option>
+                                  <option value={3.0}>3.0 pax/m² (Concentração)</option>
+                                  <option value={3.5}>3.5 pax/m² (Denso)</option>
+                                  <option value={4.0}>4.0 pax/m² (Aglomeração)</option>
+                                  <option value={4.5}>4.5 pax/m² (Crítico)</option>
+                                </select>
+                              </div>
+
+                              <div className="px-3 py-1 bg-blue-100/70 rounded-lg text-center min-w-[90px]">
+                                <span className="text-[10px] text-blue-700 block font-bold">Subtotal</span>
+                                <span className="text-xs font-black text-blue-900">{sectorSubtotal} pessoas</span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveJacobsSector(sector.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                                title="Remover Setor"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Sectors Sum Footer */}
+                    <div className="p-3.5 bg-blue-50/70 rounded-2xl border border-blue-100 flex items-center justify-between flex-wrap gap-2 text-xs">
+                      <span className="font-bold text-blue-950">
+                        Total Ponderado Multi-Setor: {effectiveTotalArea} m² de área total
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-600">Densidade Média: <strong>{effectiveAverageDensity.toFixed(2)} pax/m²</strong></span>
+                        <span className="px-3 py-1 bg-blue-600 text-white font-black rounded-lg">
+                          {jacobsSectorsTotal.toLocaleString('pt-BR')} pessoas estimadas
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ========================================================================= */}
+              {/* FAST CHECK-IN DESK & LEADER PARTICIPATION ROSTER                         */}
+              {/* ========================================================================= */}
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-md uppercase tracking-wider">
+                        Recepção & Validação de Campo
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium">Headcount por Multiplicador</span>
+                    </div>
+                    <h3 className="text-base font-black text-slate-900 mt-1 flex items-center gap-2">
+                      <UserCheck size={18} className="text-emerald-600" />
+                      Mesa de Check-in de Lideranças no Evento
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Registre a chegada dos líderes, setor alocado e compare a meta prevista com os apoiadores trazidos em tempo real.
                     </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedLeaderIdForCheckIn('new');
+                        setCheckInFormData({
+                          leaderName: '',
+                          role: 'Liderança Comunitária',
+                          territory: currentMeeting.neighborhood || 'Zona Sul',
+                          phone: '',
+                          expectedSupporters: 20,
+                          actualSupportersPresent: 20,
+                          sector: 'Plenária Central / Pista',
+                          status: 'PRESENTE',
+                          notes: ''
+                        });
+                        setIsCheckInModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
+                    >
+                      <UserPlus size={15} />
+                      Registrar Check-In Rápido
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline Fast Registration Card */}
+                <form 
+                  onSubmit={handleSaveLeaderCheckIn}
+                  className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <UserCheck size={14} className="text-blue-600" />
+                      Lançamento Rápido na Mesa de Entrada
+                    </span>
+                    <span className="text-[10px] text-slate-400">Preencha e confirme na portaria</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700">Nome da Liderança *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ex: Pastor Jorge / Profª Vera"
+                        value={checkInFormData.leaderName}
+                        onChange={(e) => setCheckInFormData({ ...checkInFormData, leaderName: e.target.value })}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-semibold text-slate-800"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700">Cargo / Entidade</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Associação de Moradores"
+                        value={checkInFormData.role}
+                        onChange={(e) => setCheckInFormData({ ...checkInFormData, role: e.target.value })}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-slate-800"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700">Setor / Quadrante no Evento</label>
+                      <select
+                        value={checkInFormData.sector}
+                        onChange={(e) => setCheckInFormData({ ...checkInFormData, sector: e.target.value })}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none font-semibold text-slate-800 cursor-pointer"
+                      >
+                        <option value="Frente do Palco / VIP">Frente do Palco / VIP</option>
+                        <option value="Plenária Central / Pista">Plenária Central / Pista</option>
+                        <option value="Fundo & Acesso / Tenda">Fundo & Acesso / Tenda</option>
+                        <option value="Mezanino / Ala Lateral">Mezanino / Ala Lateral</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700">Status no Evento</label>
+                      <select
+                        value={checkInFormData.status}
+                        onChange={(e) => setCheckInFormData({ ...checkInFormData, status: e.target.value as any })}
+                        className={`w-full px-3 py-1.5 text-xs rounded-xl outline-none font-black cursor-pointer ${
+                          checkInFormData.status === 'PRESENTE'
+                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            : checkInFormData.status === 'CONFIRMADO'
+                              ? 'bg-blue-100 text-blue-900 border border-blue-300'
+                              : 'bg-white border border-slate-200 text-slate-800'
+                        }`}
+                      >
+                        <option value="PRESENTE">PRESENTE (Entrada Confirmada)</option>
+                        <option value="CONFIRMADO">CONFIRMADO (A caminho)</option>
+                        <option value="AUSENTE">AUSENTE (Não compareceu)</option>
+                        <option value="JUSTIFICADO">JUSTIFICADO (Aviso prévio)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700">Apoiadores Presentes (Headcount)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={checkInFormData.actualSupportersPresent}
+                        onChange={(e) => setCheckInFormData({ ...checkInFormData, actualSupportersPresent: Number(e.target.value) })}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none font-black text-emerald-700"
+                        placeholder="Contagem de pessoas"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700">Meta Combinada</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={checkInFormData.expectedSupporters}
+                        onChange={(e) => setCheckInFormData({ ...checkInFormData, expectedSupporters: Number(e.target.value) })}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-600"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700">Telefone / WhatsApp</label>
+                      <input
+                        type="text"
+                        placeholder="(11) 98888-0000"
+                        value={checkInFormData.phone}
+                        onChange={(e) => setCheckInFormData({ ...checkInFormData, phone: e.target.value })}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                    >
+                      <Check size={14} />
+                      Confirmar Check-In Imediato
+                    </button>
+                  </div>
+                </form>
+
+                {/* Filter and Search Bar for Roster */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por líder, cargo, bairro ou setor..."
+                      value={leaderSearchQuery}
+                      onChange={(e) => setLeaderSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center flex-wrap gap-2">
+                    <select
+                      value={leaderFilterStatus}
+                      onChange={(e) => setLeaderFilterStatus(e.target.value)}
+                      className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none cursor-pointer"
+                    >
+                      <option value="ALL">Todos os Status</option>
+                      <option value="PRESENTE">Presentes</option>
+                      <option value="CONFIRMADO">Confirmados</option>
+                      <option value="AUSENTE">Ausentes</option>
+                      <option value="JUSTIFICADO">Justificados</option>
+                    </select>
+
+                    <select
+                      value={leaderFilterSector}
+                      onChange={(e) => setLeaderFilterSector(e.target.value)}
+                      className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 outline-none cursor-pointer"
+                    >
+                      <option value="ALL">Todos os Setores</option>
+                      <option value="Frente do Palco / VIP">Palco / VIP</option>
+                      <option value="Plenária Central / Pista">Plenária Central</option>
+                      <option value="Fundo & Acesso / Tenda">Fundo & Acesso</option>
+                      <option value="Mezanino / Ala Lateral">Mezanino</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Leaders Check-In Interactive Roster */}
+                <div className="space-y-2.5">
+                  {filteredLeadersCheckIn.map((leader) => {
+                    const actualCount = leader.actualSupportersPresent !== undefined ? leader.actualSupportersPresent : leader.expectedSupporters;
+                    const performanceRatio = leader.expectedSupporters > 0 ? Math.round((actualCount / leader.expectedSupporters) * 100) : 100;
+                    const cleanPhone = leader.phone ? leader.phone.replace(/\D/g, '') : '';
+
+                    return (
+                      <div
+                        key={leader.id}
+                        className={`p-4 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                          leader.status === 'PRESENTE'
+                            ? 'bg-emerald-50/40 border-emerald-200 shadow-sm'
+                            : leader.status === 'CONFIRMADO'
+                              ? 'bg-blue-50/30 border-blue-200'
+                              : 'bg-slate-50 border-slate-100'
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-black text-slate-900 text-xs">{leader.leaderName}</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                              {leader.role}
+                            </span>
+                            <span className="text-[10px] text-slate-400">• {leader.territory}</span>
+                            {leader.sector && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                                📍 {leader.sector}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                            <span>
+                              Apoiadores: <strong className="text-emerald-700">{actualCount} presentes</strong> de {leader.expectedSupporters} esperados ({performanceRatio}%)
+                            </span>
+                            {leader.checkInTime && (
+                              <span className="text-emerald-700 font-bold flex items-center gap-1">
+                                <Clock size={12} />
+                                Entrada às {leader.checkInTime}
+                              </span>
+                            )}
+                            {leader.notes && (
+                              <span className="text-slate-400 italic text-[11px]">
+                                &quot;{leader.notes}&quot;
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/50">
+                          {/* Quick Status Dropdown */}
+                          <select
+                            value={leader.status}
+                            onChange={(e) => handleLeaderStatusChange(leader.id, e.target.value as any)}
+                            className={`text-xs font-black rounded-xl px-3 py-1.5 outline-none border cursor-pointer ${
+                              leader.status === 'PRESENTE'
+                                ? 'bg-emerald-100 border-emerald-300 text-emerald-900'
+                                : leader.status === 'CONFIRMADO'
+                                  ? 'bg-blue-100 border-blue-300 text-blue-900'
+                                  : leader.status === 'JUSTIFICADO'
+                                    ? 'bg-amber-100 border-amber-300 text-amber-900'
+                                    : 'bg-slate-100 border-slate-200 text-slate-700'
+                            }`}
+                          >
+                            <option value="PRESENTE">PRESENTE</option>
+                            <option value="CONFIRMADO">CONFIRMADO</option>
+                            <option value="AUSENTE">AUSENTE</option>
+                            <option value="JUSTIFICADO">JUSTIFICADO</option>
+                          </select>
+
+                          {/* Edit Details Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditLeaderCheckIn(leader)}
+                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors"
+                            title="Editar Dados de Check-in"
+                          >
+                            <UserCheck size={14} />
+                          </button>
+
+                          {/* WhatsApp Fast Contact */}
+                          {cleanPhone && (
+                            <a
+                              href={`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${leader.leaderName}, registramos seu check-in na ${currentMeeting.title} no setor ${leader.sector || 'Geral'}. Bom evento!`)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-xl transition-colors"
+                              title="Enviar confirmação por WhatsApp"
+                            >
+                              <MessageSquare size={14} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {filteredLeadersCheckIn.length === 0 && (
+                    <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <Users size={24} className="mx-auto text-slate-300 mb-1" />
+                      <p className="text-xs text-slate-500 font-bold">Nenhuma liderança encontrada com os filtros atuais.</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Cadastre um novo check-in ou limpe os filtros de busca.</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1842,6 +2668,169 @@ export const Meetings: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
+      {/* MODAL: CHECK-IN COMPLETO / EDIÇÃO DE LIDERANÇA NO EVENTO                  */}
+      {/* ========================================================================= */}
+      {isCheckInModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <UserCheck size={18} className="text-emerald-600" />
+                  <span>
+                    {selectedLeaderIdForCheckIn === 'new' ? 'Registrar Check-In de Liderança' : 'Editar Dados de Check-in'}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Evento: <strong>{currentMeeting.title}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCheckInModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLeaderCheckIn} className="space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Nome da Liderança / Multiplicador *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Pastor Marcos / Dra. Regina"
+                  value={checkInFormData.leaderName}
+                  onChange={(e) => setCheckInFormData({ ...checkInFormData, leaderName: e.target.value })}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Cargo / Entidade Representada</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Associação de Bairro"
+                    value={checkInFormData.role}
+                    onChange={(e) => setCheckInFormData({ ...checkInFormData, role: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Território / Bairro</label>
+                  <input
+                    type="text"
+                    value={checkInFormData.territory}
+                    onChange={(e) => setCheckInFormData({ ...checkInFormData, territory: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Setor / Quadrante Físico</label>
+                  <select
+                    value={checkInFormData.sector}
+                    onChange={(e) => setCheckInFormData({ ...checkInFormData, sector: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-medium cursor-pointer"
+                  >
+                    <option value="Frente do Palco / VIP">Frente do Palco / VIP</option>
+                    <option value="Plenária Central / Pista">Plenária Central / Pista</option>
+                    <option value="Fundo & Acesso / Tenda">Fundo & Acesso / Tenda</option>
+                    <option value="Mezanino / Ala Lateral">Mezanino / Ala Lateral</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Status de Presença</label>
+                  <select
+                    value={checkInFormData.status}
+                    onChange={(e) => setCheckInFormData({ ...checkInFormData, status: e.target.value as any })}
+                    className={`w-full px-3 py-2 text-xs rounded-xl outline-none font-bold cursor-pointer border ${
+                      checkInFormData.status === 'PRESENTE'
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                        : checkInFormData.status === 'CONFIRMADO'
+                          ? 'bg-blue-100 text-blue-900 border-blue-300'
+                          : 'bg-slate-50 border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <option value="PRESENTE">PRESENTE (Entrada Confirmada)</option>
+                    <option value="CONFIRMADO">CONFIRMADO (Aguardando)</option>
+                    <option value="AUSENTE">AUSENTE</option>
+                    <option value="JUSTIFICADO">JUSTIFICADO</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Meta Mobilizada (Apoiadores)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={checkInFormData.expectedSupporters}
+                    onChange={(e) => setCheckInFormData({ ...checkInFormData, expectedSupporters: Number(e.target.value) })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-emerald-700">Apoiadores Presentes Reais</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={checkInFormData.actualSupportersPresent}
+                    onChange={(e) => setCheckInFormData({ ...checkInFormData, actualSupportersPresent: Number(e.target.value) })}
+                    className="w-full px-3 py-2 text-xs bg-emerald-50 border border-emerald-300 rounded-xl outline-none font-black text-emerald-900"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">WhatsApp de Contato</label>
+                <input
+                  type="text"
+                  placeholder="(11) 98888-7777"
+                  value={checkInFormData.phone}
+                  onChange={(e) => setCheckInFormData({ ...checkInFormData, phone: e.target.value })}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Observações / Demandas da Liderança</label>
+                <textarea
+                  rows={2}
+                  placeholder="Ex: Trouxe caravana de 3 vans; pediu fala rápida com o candidato no backstage."
+                  value={checkInFormData.notes}
+                  onChange={(e) => setCheckInFormData({ ...checkInFormData, notes: e.target.value })}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCheckInModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                >
+                  <Check size={14} />
+                  Salvar Check-In
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* MODAL: CONVIDAR LIDERANÇA PARA CHECK-IN                                   */}
       {/* ========================================================================= */}
       {isAddLeaderModalOpen && (
@@ -1870,6 +2859,8 @@ export const Meetings: React.FC = () => {
                   territory: newLeader.territory,
                   phone: newLeader.phone || '(11) 98888-0000',
                   expectedSupporters: Number(newLeader.expectedSupporters) || 15,
+                  actualSupportersPresent: Number(newLeader.expectedSupporters) || 15,
+                  sector: 'Plenária Central / Pista',
                   status: 'CONFIRMADO'
                 };
 

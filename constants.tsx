@@ -1,5 +1,9 @@
 
-import { Voter, SupportLevel, TeamMember, UserRole, PollResult, VotingStation, Survey, SurveyType, QuestionType, CandidateResult, TallyStats } from './types';
+import { 
+  Voter, SupportLevel, TeamMember, UserRole, PollResult, VotingStation, 
+  Survey, SurveyType, QuestionType, CandidateResult, TallyStats,
+  UserProfile, AccessLog
+} from './types';
 
 // Palette Colors inspired by Votando (Blue/Teal/White)
 export const THEME = {
@@ -685,5 +689,214 @@ export const MOCK_MEETINGS: Meeting[] = [
       pendingReceiptsCount: 0,
       auditFlags: ['Despesa legalmente regular.']
     }
+  }
+];
+
+// ==========================================
+// AUTENTICAÇÃO, PERMISSÕES E USUÁRIO GLOBAL
+// ==========================================
+
+export const SYSTEM_PERMISSIONS = [
+  { id: 'DASHBOARD_FULL', label: 'Dashboard & Indicadores Globais', category: 'Geral' },
+  { id: 'MEETINGS_MANAGE', label: 'Gestão de Reuniões & Checklist RACI', category: 'Operações' },
+  { id: 'JACOBS_AUDIT', label: 'Auditoria de Público (Método de Jacobs)', category: 'Operações' },
+  { id: 'FINANCIAL_COMPLIANCE', label: 'Prestação de Contas & Compliance TSE', category: 'Jurídico/Financeiro' },
+  { id: 'VOTERS_FULL', label: 'Base de Eleitores & Segmentação', category: 'Mobilização' },
+  { id: 'TEAMS_MANAGE', label: 'Gestão de Equipes & Multiplicadores', category: 'Mobilização' },
+  { id: 'POLLS_MANAGE', label: 'Pesquisas Eleitorais & Formulários', category: 'Estratégia' },
+  { id: 'TALLY_MANAGE', label: 'Apuração Paralela & Fiscais de Seção', category: 'Eleição' },
+  { id: 'MAPS_BI_FULL', label: 'Mapas Georreferenciados & BI Territorial', category: 'Inteligência' },
+  { id: 'USERS_RBAC_MANAGE', label: 'Gerenciamento de Perfis e Acessos', category: 'Segurança' },
+  { id: 'SYSTEM_SETTINGS', label: 'Configurações Globais do Comitê', category: 'Administração' }
+];
+
+export const DEFAULT_GLOBAL_USER: UserProfile = {
+  id: 'usr-admin-global',
+  name: 'Administrador Master',
+  email: 'admin@votando.eleicoes.br',
+  role: UserRole.ADMIN,
+  isGlobalAccess: true,
+  phone: '(11) 99999-0001',
+  cpf: '123.456.789-00',
+  electoralTitle: '9876 5432 1098',
+  jobTitle: 'Coordenador Geral de Campanha (Acesso Global)',
+  party: 'PVOT (Partido Votando - 45)',
+  coalition: 'Coligação Futuro & Vitória',
+  territory: 'Nacional / Todas as Zonas (Acesso Irrestrito)',
+  votingZone: 'Zona 001 - Capital',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  bio: 'Acesso Administrativo Global irrestrito para coordenação estratégica, compliance financeiro TSE, inteligência territorial e controle de multiplicadores.',
+  twoFactorEnabled: true,
+  permissions: SYSTEM_PERMISSIONS.map(p => p.id),
+  notificationPreferences: {
+    email: true,
+    push: true,
+    urgentAlerts: true,
+    whatsapp: true
+  },
+  themePreference: 'light',
+  createdAt: '2024-01-01 08:00:00',
+  lastLogin: 'Agora mesmo',
+  status: 'ACTIVE'
+};
+
+export const MOCK_USERS: UserProfile[] = [
+  DEFAULT_GLOBAL_USER,
+  {
+    id: 'usr-coord-1',
+    name: 'Dr. Roberto Vasconcelos',
+    email: 'coordenacao@votando.eleicoes.br',
+    role: UserRole.COORDINATOR,
+    isGlobalAccess: false,
+    phone: '(11) 98888-6666',
+    cpf: '234.567.890-11',
+    electoralTitle: '8765 4321 0987',
+    jobTitle: 'Coordenador de Estratégia e Logística',
+    party: 'PVOT (45)',
+    coalition: 'Coligação Futuro & Vitória',
+    territory: 'Região Metropolitana',
+    votingZone: 'Zona 102',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    bio: 'Coordenação operacional de comícios, rotas de rua e alinhamento de lideranças municipais.',
+    twoFactorEnabled: false,
+    permissions: ['DASHBOARD_FULL', 'MEETINGS_MANAGE', 'JACOBS_AUDIT', 'VOTERS_FULL', 'TEAMS_MANAGE', 'MAPS_BI_FULL'],
+    notificationPreferences: {
+      email: true,
+      push: true,
+      urgentAlerts: true,
+      whatsapp: false
+    },
+    themePreference: 'light',
+    createdAt: '2024-02-15 10:30:00',
+    lastLogin: 'Há 2 horas',
+    status: 'ACTIVE'
+  },
+  {
+    id: 'usr-leader-1',
+    name: 'Ricardo Mendes',
+    email: 'ricardo.mendes@votando.eleicoes.br',
+    role: UserRole.LEADER,
+    isGlobalAccess: false,
+    phone: '(11) 98888-1111',
+    cpf: '345.678.901-22',
+    electoralTitle: '7654 3210 9876',
+    jobTitle: 'Líder Regional & Multiplicador',
+    party: 'PVOT (45)',
+    coalition: 'Coligação Futuro & Vitória',
+    territory: 'Zona Sul - Distrito 4',
+    votingZone: 'Zona 088',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    bio: 'Mobilização territorial de bairros e gestão de comitês comunitários da Zona Sul.',
+    twoFactorEnabled: false,
+    permissions: ['MEETINGS_MANAGE', 'VOTERS_FULL', 'TEAMS_MANAGE'],
+    notificationPreferences: {
+      email: false,
+      push: true,
+      urgentAlerts: true,
+      whatsapp: true
+    },
+    themePreference: 'light',
+    createdAt: '2024-03-01 14:00:00',
+    lastLogin: 'Há 45 minutos',
+    status: 'ACTIVE'
+  },
+  {
+    id: 'usr-fiscal-1',
+    name: 'Juliana Rocha',
+    email: 'juliana.fiscal@votando.eleicoes.br',
+    role: UserRole.FISCAL,
+    isGlobalAccess: false,
+    phone: '(11) 97777-3322',
+    cpf: '456.789.012-33',
+    electoralTitle: '6543 2109 8765',
+    jobTitle: 'Fiscal Titular de Apuração',
+    party: 'PVOT (45)',
+    coalition: 'Coligação Futuro & Vitória',
+    territory: 'Zona 105 - Centro Norte',
+    votingZone: 'Zona 105',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    bio: 'Fiscalização de urnas, registro de Boletins de Urna (BUs) e auditoria de apuração.',
+    twoFactorEnabled: true,
+    permissions: ['TALLY_MANAGE', 'MEETINGS_MANAGE'],
+    notificationPreferences: {
+      email: true,
+      push: true,
+      urgentAlerts: true,
+      whatsapp: true
+    },
+    themePreference: 'light',
+    createdAt: '2024-04-10 09:15:00',
+    lastLogin: 'Ontem às 19:30',
+    status: 'ACTIVE'
+  },
+  {
+    id: 'usr-supporter-1',
+    name: 'Carla Peixoto',
+    email: 'carla.voluntaria@votando.eleicoes.br',
+    role: UserRole.SUPPORTER,
+    isGlobalAccess: false,
+    phone: '(11) 96666-4455',
+    jobTitle: 'Mobilizadora de Rua & Voluntária',
+    party: 'PVOT (45)',
+    coalition: 'Coligação Futuro & Vitória',
+    territory: 'Centro',
+    votingZone: 'Zona 102',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    bio: 'Distribuição de santinhos, convite para reuniões e cadastro de eleitores simpáticos.',
+    twoFactorEnabled: false,
+    permissions: ['VOTERS_FULL', 'MEETINGS_MANAGE'],
+    notificationPreferences: {
+      email: false,
+      push: true,
+      urgentAlerts: false,
+      whatsapp: true
+    },
+    themePreference: 'light',
+    createdAt: '2024-05-20 16:40:00',
+    lastLogin: 'Há 3 dias',
+    status: 'ACTIVE'
+  }
+];
+
+export const MOCK_ACCESS_LOGS: AccessLog[] = [
+  {
+    id: 'log-1',
+    timestamp: '2024-10-14 18:22:10',
+    action: 'Login efetuado com sucesso (Acesso Global)',
+    ip: '189.120.45.12 (São Paulo - BR)',
+    device: 'Chrome 128 / macOS Sequoia',
+    status: 'SUCCESS'
+  },
+  {
+    id: 'log-2',
+    timestamp: '2024-10-14 17:15:04',
+    action: 'Auditoria de Despesa TSE (Gerador 150kVA) aprovada',
+    ip: '189.120.45.12 (São Paulo - BR)',
+    device: 'Chrome 128 / macOS Sequoia',
+    status: 'SUCCESS'
+  },
+  {
+    id: 'log-3',
+    timestamp: '2024-10-14 14:02:40',
+    action: 'Tentativa de acesso com senha incorreta',
+    ip: '177.18.99.201 (Curitiba - BR)',
+    device: 'Firefox 130 / Windows 11',
+    status: 'WARNING'
+  },
+  {
+    id: 'log-4',
+    timestamp: '2024-10-14 11:30:18',
+    action: 'Sincronização de 120 eleitores via planilha CSV',
+    ip: '189.120.45.12 (São Paulo - BR)',
+    device: 'Chrome 128 / macOS Sequoia',
+    status: 'SUCCESS'
+  },
+  {
+    id: 'log-5',
+    timestamp: '2024-10-13 22:45:00',
+    action: 'Check-in de Lideranças confirmado na Reunião Plenária',
+    ip: '201.86.110.55 (São Paulo - BR)',
+    device: 'Mobile Safari / iOS 18.0',
+    status: 'SUCCESS'
   }
 ];

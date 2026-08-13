@@ -1,8 +1,59 @@
 
 export enum UserRole {
   ADMIN = 'ADMIN',
+  COORDINATOR = 'COORDINATOR',
   LEADER = 'LEADER',
+  FISCAL = 'FISCAL',
   SUPPORTER = 'SUPPORTER'
+}
+
+export interface UserNotificationPreferences {
+  email: boolean;
+  push: boolean;
+  urgentAlerts: boolean;
+  whatsapp: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isGlobalAccess: boolean;
+  phone: string;
+  cpf?: string;
+  electoralTitle?: string;
+  jobTitle: string;
+  party: string;
+  coalition?: string;
+  territory: string;
+  votingZone?: string;
+  avatarUrl?: string;
+  bio?: string;
+  twoFactorEnabled: boolean;
+  permissions: string[];
+  notificationPreferences: UserNotificationPreferences;
+  themePreference?: 'light' | 'dark' | 'system';
+  createdAt: string;
+  lastLogin: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+}
+
+export interface AuthSession {
+  user: UserProfile;
+  token: string;
+  expiresAt: string;
+  ipAddress: string;
+  deviceInfo: string;
+}
+
+export interface AccessLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  ip: string;
+  device: string;
+  status: 'SUCCESS' | 'FAILED' | 'WARNING';
 }
 
 export enum SupportLevel {
@@ -191,6 +242,8 @@ export interface LeaderCheckIn {
   territory: string;
   phone: string;
   expectedSupporters: number;
+  actualSupportersPresent?: number;
+  sector?: string;
   status: 'CONFIRMADO' | 'PRESENTE' | 'AUSENTE' | 'JUSTIFICADO';
   checkInTime?: string;
   notes?: string;
