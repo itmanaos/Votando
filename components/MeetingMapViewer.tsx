@@ -4,7 +4,7 @@ import {
   Calendar, Clock, Users, ArrowRight, Eye, Navigation, 
   Filter, Sparkles, Shield, AlertCircle, Compass, CheckCircle2,
   TrendingUp, BarChart2, Radio, Maximize2, Minimize2, Map as MapIcon,
-  ChevronRight, Activity, Zap
+  ChevronRight, Activity, Zap, UserCheck
 } from 'lucide-react';
 import { Meeting, MeetingType, MeetingStatus } from '../types';
 import { useToast } from './Toast';
@@ -759,7 +759,7 @@ export const MeetingMapViewer: React.FC<MeetingMapViewerProps> = ({
                 </div>
 
                 {/* Mobilized Leaders Snapshot */}
-                <div className="flex items-center justify-between text-xs text-slate-600 px-1">
+                <div className="flex items-center justify-between text-xs text-slate-600 px-1 mb-2">
                   <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
                     <Users size={13} className="text-slate-400" />
                     Lideranças Mapeadas:
@@ -767,6 +767,19 @@ export const MeetingMapViewer: React.FC<MeetingMapViewerProps> = ({
                   <span className="font-bold text-slate-800 text-xs">
                     {activeMeeting.leadersCheckIn?.length || 0} confirmadas
                   </span>
+                </div>
+
+                {/* Coordinator Card */}
+                <div className="p-2.5 bg-slate-100/80 rounded-xl border border-slate-200/60 flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <div className="w-6 h-6 rounded-lg bg-blue-600/10 text-blue-700 flex items-center justify-center font-black text-[10px] shrink-0">
+                      <UserCheck size={12} />
+                    </div>
+                    <div className="truncate">
+                      <span className="text-[10px] text-slate-400 font-medium block leading-none">Coordenador Responsável</span>
+                      <strong className="text-slate-800 font-bold truncate text-[11px] block mt-0.5">{activeMeeting.coordinatorName}</strong>
+                    </div>
+                  </div>
                 </div>
               </div>
 

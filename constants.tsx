@@ -49,7 +49,10 @@ export const MOCK_VOTERS: Voter[] = [
 export const MOCK_TEAMS: TeamMember[] = [
   { id: 'L1', name: 'Ricardo Mendes', role: UserRole.LEADER, territory: 'Zona Sul', goals: 500, achieved: 420, phone: '(11) 98888-1111' },
   { id: 'L2', name: 'Fernanda Lima', role: UserRole.LEADER, territory: 'Zona Norte', goals: 300, achieved: 150, phone: '(11) 98888-2222' },
-  { id: 'L3', name: 'Marcos Paulo', role: UserRole.SUPPORTER, territory: 'Centro', goals: 100, achieved: 85, phone: '(11) 98888-3333' },
+  { id: 'L3', name: 'Marcos Paulo', role: UserRole.LEADER, territory: 'Centro', goals: 250, achieved: 210, phone: '(11) 98888-3333' },
+  { id: 'L4', name: 'Camila Alencar', role: UserRole.LEADER, territory: 'Zona Leste', goals: 450, achieved: 390, phone: '(11) 98888-4444' },
+  { id: 'L5', name: 'Lucas Ferraz', role: UserRole.LEADER, territory: 'Zona Oeste', goals: 350, achieved: 290, phone: '(11) 98888-5555' },
+  { id: 'L6', name: 'Roberto Vasconcelos', role: UserRole.COORDINATOR, territory: 'Geral', goals: 1000, achieved: 920, phone: '(11) 98888-6666' },
 ];
 
 export const MOCK_POLLS: PollResult[] = [
@@ -546,8 +549,8 @@ export const MOCK_MEETINGS: Meeting[] = [
     coordinates: { lat: -23.5385, lng: -46.4532 },
     venueCapacity: 450,
     isOutdoor: false,
-    coordinatorId: 'L1',
-    coordinatorName: 'Ricardo Mendes',
+    coordinatorId: 'L4',
+    coordinatorName: 'Camila Alencar',
     expectedAttendance: 320,
     confirmedAttendance: 285,
     topic: 'Hub de inovação pública, cursos técnicos e passe livre estudantil integral',
@@ -623,8 +626,8 @@ export const MOCK_MEETINGS: Meeting[] = [
     coordinates: { lat: -23.5678, lng: -46.6912 },
     venueCapacity: 90,
     isOutdoor: false,
-    coordinatorId: 'L3',
-    coordinatorName: 'Marcos Paulo',
+    coordinatorId: 'L5',
+    coordinatorName: 'Lucas Ferraz',
     expectedAttendance: 65,
     confirmedAttendance: 58,
     topic: 'Incentivos a startups de impacto social, redução de ISS e sustentabilidade urbana',

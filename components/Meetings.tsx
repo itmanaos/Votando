@@ -41,11 +41,14 @@ export const Meetings: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [filterCoordinator, setFilterCoordinator] = useState<string>('ALL');
 
   // Modals
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
   const [isNewExpenseModalOpen, setIsNewExpenseModalOpen] = useState(false);
   const [isAddLeaderModalOpen, setIsAddLeaderModalOpen] = useState(false);
+  const [isChangeCoordinatorModalOpen, setIsChangeCoordinatorModalOpen] = useState(false);
+  const [selectedCoordinatorIdForChange, setSelectedCoordinatorIdForChange] = useState<string>('L1');
   const [selectedStepIndex, setSelectedStepIndex] = useState<number>(0);
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
   const [isAuditingExpenses, setIsAuditingExpenses] = useState(false);
@@ -103,14 +106,17 @@ export const Meetings: React.FC = () => {
   // Filtered Meetings List
   const filteredMeetings = useMemo(() => {
     return meetings.filter(m => {
-      const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            m.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            m.venueName.toLowerCase().includes(searchQuery.toLowerCase());
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = m.title.toLowerCase().includes(q) ||
+                            m.neighborhood.toLowerCase().includes(q) ||
+                            m.venueName.toLowerCase().includes(q) ||
+                            m.coordinatorName.toLowerCase().includes(q);
       const matchesType = filterType === 'ALL' || m.type === filterType;
       const matchesStatus = filterStatus === 'ALL' || m.status === filterStatus;
-      return matchesSearch && matchesType && matchesStatus;
+      const matchesCoordinator = filterCoordinator === 'ALL' || m.coordinatorId === filterCoordinator;
+      return matchesSearch && matchesType && matchesStatus && matchesCoordinator;
     });
-  }, [meetings, searchQuery, filterType, filterStatus]);
+  }, [meetings, searchQuery, filterType, filterStatus, filterCoordinator]);
 
   // Conflict Matrix Checker for scheduling
   const scheduleConflicts = useMemo(() => {
@@ -318,6 +324,28 @@ export const Meetings: React.FC = () => {
       type: 'success',
       title: 'Despesa Registrada',
       message: `R$ ${amountNum.toFixed(2)} lançados na contabilidade do evento.`
+    });
+  };
+
+  // Handle Changing Meeting Coordinator
+  const handleChangeCoordinator = (targetMeetingId: string, newCoordId: string) => {
+    const coord = MOCK_TEAMS.find(t => t.id === newCoordId);
+    if (!coord) return;
+
+    setMeetings(prev => prev.map(m => {
+      if (m.id !== targetMeetingId) return m;
+      return {
+        ...m,
+        coordinatorId: coord.id,
+        coordinatorName: coord.name
+      };
+    }));
+
+    setIsChangeCoordinatorModalOpen(false);
+    addToast({
+      type: 'success',
+      title: 'Coordenador Atualizado',
+      message: `${coord.name} (${coord.territory}) agora é o coordenador responsável por este encontro.`
     });
   };
 
@@ -545,26 +573,41 @@ export const Meetings: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none cursor-pointer"
-              >
-                <option value="ALL">Todos os Tipos</option>
-                {Object.values(MeetingType).map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none cursor-pointer"
+                >
+                  <option value="ALL">Todos os Tipos</option>
+                  {Object.values(MeetingType).map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none cursor-pointer"
+                >
+                  <option value="ALL">Todos os Status</option>
+                  {Object.values(MeetingStatus).map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
 
               <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none cursor-pointer"
+                value={filterCoordinator}
+                onChange={(e) => setFilterCoordinator(e.target.value)}
+                className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none cursor-pointer"
               >
-                <option value="ALL">Todos os Status</option>
-                {Object.values(MeetingStatus).map(s => (
-                  <option key={s} value={s}>{s}</option>
+                <option value="ALL">👤 Todos os Coordenadores</option>
+                {MOCK_TEAMS.map(team => (
+                  <option key={team.id} value={team.id}>
+                    👤 {team.name} ({team.territory})
+                  </option>
                 ))}
               </select>
             </div>
@@ -605,6 +648,13 @@ export const Meetings: React.FC = () => {
                   <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 mb-1.5">
                     {m.title}
                   </h3>
+
+                  {/* Coordinator Badge */}
+                  <div className="mb-2 flex items-center gap-1.5 px-2 py-1 bg-slate-100/80 rounded-lg text-[11px] text-slate-700 font-medium border border-slate-200/50">
+                    <UserCheck size={13} className="text-blue-600 shrink-0" />
+                    <span className="text-slate-400 text-[10px]">Coord:</span>
+                    <strong className="truncate text-slate-800">{m.coordinatorName}</strong>
+                  </div>
 
                   <div className="space-y-1 text-xs text-slate-500">
                     <div className="flex items-center gap-1.5">
@@ -685,9 +735,69 @@ export const Meetings: React.FC = () => {
                 <div className="inline-block mt-0.5 px-3 py-1 rounded-full text-xs font-black bg-blue-50 text-blue-700 border border-blue-200">
                   {currentMeeting.status}
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1">Coord: {currentMeeting.coordinatorName}</div>
               </div>
             </div>
+
+            {/* Dedicated Coordenador Responsável Card */}
+            {(() => {
+              const currentCoordinator = MOCK_TEAMS.find(t => t.id === currentMeeting.coordinatorId || t.name === currentMeeting.coordinatorName);
+              const cleanPhone = currentCoordinator?.phone ? currentCoordinator.phone.replace(/\D/g, '') : '';
+              
+              return (
+                <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 text-white flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md border border-slate-800/80">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-300 font-black text-sm shrink-0 shadow-inner">
+                      {currentMeeting.coordinatorName.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] uppercase font-black tracking-wider text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-400/20">
+                          Coordenador Responsável
+                        </span>
+                        <span className="text-xs text-slate-300 font-medium">
+                          • {currentCoordinator?.territory ? `Território: ${currentCoordinator.territory}` : `Zona: ${currentMeeting.votingZone}`}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-black text-white mt-1 flex items-center gap-2">
+                        {currentMeeting.coordinatorName}
+                        {currentCoordinator?.phone && (
+                          <span className="text-xs text-slate-300 font-normal">
+                            ({currentCoordinator.phone})
+                          </span>
+                        )}
+                      </h4>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-700/50">
+                    {cleanPhone && (
+                      <a
+                        href={`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${currentMeeting.coordinatorName}, alinhamento sobre a reunião "${currentMeeting.title}" agendada para ${currentMeeting.date}...`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95"
+                        title="Enviar mensagem via WhatsApp"
+                      >
+                        <MessageSquare size={13} />
+                        <span>WhatsApp</span>
+                      </a>
+                    )}
+                    <button
+                      id="change-meeting-coordinator-btn"
+                      type="button"
+                      onClick={() => {
+                        setSelectedCoordinatorIdForChange(currentMeeting.coordinatorId || 'L1');
+                        setIsChangeCoordinatorModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/15 transition-all active:scale-95"
+                    >
+                      <RefreshCw size={13} />
+                      <span>Alterar Coordenador</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-4 border-t border-slate-100">
@@ -1526,6 +1636,36 @@ export const Meetings: React.FC = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>Coordenador Responsável *</span>
+                    <span className="text-[10px] text-blue-600 font-semibold">Responsável pela execução</span>
+                  </label>
+                  <select
+                    value={newMeeting.coordinatorId}
+                    onChange={(e) => setNewMeeting({ ...newMeeting, coordinatorId: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-slate-800 cursor-pointer focus:bg-white focus:border-blue-500"
+                  >
+                    {MOCK_TEAMS.map(team => (
+                      <option key={team.id} value={team.id}>
+                        {team.name} — {team.territory} ({team.phone})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Público Esperado</label>
+                  <input
+                    type="number"
+                    value={newMeeting.expectedAttendance}
+                    onChange={(e) => setNewMeeting({ ...newMeeting, expectedAttendance: Number(e.target.value) })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 font-bold"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">Pauta Principal do Encontro</label>
                 <textarea
@@ -1818,6 +1958,105 @@ export const Meetings: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ALTERAR COORDENADOR RESPONSÁVEL DA REUNIÃO                         */}
+      {/* ========================================================================= */}
+      {isChangeCoordinatorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <UserCheck size={18} className="text-blue-600" />
+                  <span>Alterar Coordenador Responsável</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Reatribuir a responsabilidade e supervisão do evento: <strong>{currentMeeting.title}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChangeCoordinatorModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-slate-700 block">
+                Selecione o novo Coordenador da Reunião:
+              </label>
+
+              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                {MOCK_TEAMS.map((team) => {
+                  const isSelected = selectedCoordinatorIdForChange === team.id;
+                  const isCurrent = currentMeeting.coordinatorId === team.id;
+
+                  return (
+                    <div
+                      key={team.id}
+                      onClick={() => setSelectedCoordinatorIdForChange(team.id)}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                        isSelected
+                          ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${
+                          isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {team.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-slate-900">{team.name}</h4>
+                            {isCurrent && (
+                              <span className="text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                                Atual
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            {team.territory} • {team.phone}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center border text-xs font-bold ${
+                          isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 text-transparent'
+                        }`}>
+                          ✓
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsChangeCoordinatorModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChangeCoordinator(currentMeeting.id, selectedCoordinatorIdForChange)}
+                className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md transition-all active:scale-95"
+              >
+                Confirmar Reatribuição
+              </button>
+            </div>
           </div>
         </div>
       )}
