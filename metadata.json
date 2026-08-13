@@ -1,8 +1,10 @@
 {
   "name": "Electoral Command Center - Votando",
-  "description": "A high-performance political campaign management suite with real-time analytics, voter tracking, team coordination, and georeferenced intelligence.",
+  "description": "A high-performance political campaign management suite with real-time analytics, meeting management module (9-step lifecycle, RACI, Jacobs crowd density, TSE compliance), voter tracking, and georeferenced intelligence.",
   "requestFramePermissions": [
     "geolocation"
   ],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

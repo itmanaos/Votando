@@ -1,22 +1,24 @@
 
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, Map as MapIcon, Shield, BarChart3, UsersRound, Settings, Menu, X, Bell, User, ClipboardList, Vote } from 'lucide-react';
+import { LayoutDashboard, Users, Map as MapIcon, Shield, BarChart3, UsersRound, Settings, Menu, X, Bell, User, ClipboardList, Vote, CalendarDays } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import VoterList from './components/VoterList';
 import MapView from './components/MapView';
 import Teams from './components/Teams';
 import Polls from './components/Polls';
 import VotingResults from './components/VotingResults';
+import Meetings from './components/Meetings';
 import { UserRole } from './types';
 import { ToastProvider } from './components/Toast';
 
 const AppContent: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('meetings');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentUserRole] = useState<UserRole>(UserRole.ADMIN);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [UserRole.ADMIN, UserRole.LEADER] },
+    { id: 'meetings', label: 'Reuniões & Agenda', icon: CalendarDays, roles: [UserRole.ADMIN, UserRole.LEADER, UserRole.SUPPORTER] },
     { id: 'voters', label: 'Eleitores', icon: Users, roles: [UserRole.ADMIN, UserRole.LEADER, UserRole.SUPPORTER] },
     { id: 'teams', label: 'Equipes', icon: UsersRound, roles: [UserRole.ADMIN, UserRole.LEADER] },
     { id: 'polls', label: 'Pesquisas', icon: ClipboardList, roles: [UserRole.ADMIN, UserRole.LEADER] },
@@ -30,6 +32,7 @@ const AppContent: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
+      case 'meetings': return <Meetings />;
       case 'voters': return <VoterList />;
       case 'teams': return <Teams />;
       case 'polls': return <Polls />;
@@ -49,6 +52,7 @@ const AppContent: React.FC = () => {
       );
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
