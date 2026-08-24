@@ -303,6 +303,23 @@ export interface PublicAttendanceData {
   totalSupportersMobilized: number;
 }
 
+export interface MeetingAttendeeCheckIn {
+  id: string;
+  voterId?: string;
+  name: string;
+  phone: string;
+  neighborhood: string;
+  leaderId: string;
+  leaderName: string;
+  supportLevel: SupportLevel;
+  checkInTime: string;
+  sector?: string;
+  votingZone?: string;
+  votingSection?: string;
+  interests?: string[];
+  notes?: string;
+}
+
 export interface Meeting {
   id: string;
   title: string;
@@ -331,6 +348,7 @@ export interface Meeting {
   // Submódulos
   attendanceData: PublicAttendanceData;
   leadersCheckIn: LeaderCheckIn[];
+  attendeeCheckIns?: MeetingAttendeeCheckIn[];
   expenses: MeetingExpense[];
   
   // IA & Jurídico

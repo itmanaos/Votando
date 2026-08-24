@@ -8,12 +8,14 @@ import {
   Info, ShieldCheck, Check, MessageSquare, Compass, Map as MapIcon,
   Layers, Radio, Calculator, Sliders, Copy, Share2, TrendingUp,
   BarChart3, AlertOctagon, CheckCheck, UserPlus, FileSpreadsheet,
-  RotateCcw
+  RotateCcw, Trash2, QrCode, Smartphone, HeartHandshake, User,
+  ExternalLink, Send, CheckCircle, Tag, Sparkle
 } from 'lucide-react';
 import { 
   Meeting, MeetingType, MeetingStatus, StepStatus, RACIRole, 
   MeetingLifecycleStep, LeaderCheckIn, MeetingExpense, ExpenseCategory, 
-  PaymentFundingSource, ComplianceAuditStatus 
+  PaymentFundingSource, ComplianceAuditStatus, SupportLevel,
+  MeetingAttendeeCheckIn
 } from '../types';
 import { MOCK_MEETINGS, DEFAULT_LIFECYCLE_STEPS, MOCK_TEAMS } from '../constants';
 import { analyzeMeetingSuccessPredictive, auditMeetingExpensesTSE } from '../geminiService';
@@ -35,7 +37,10 @@ const STEP_ICONS: Record<number, React.ElementType> = {
 
 export const Meetings: React.FC = () => {
   const { addToast } = useToast();
-  const { meetings, setMeetings, addMeeting, updateMeeting, deleteMeeting, restoreDemoData } = useDatabase();
+  const { 
+    meetings, setMeetings, addMeeting, updateMeeting, deleteMeeting, restoreDemoData,
+    voters, addVoter, teams, updateTeamMember 
+  } = useDatabase();
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>(() => meetings[0]?.id || '');
   const [viewMode, setViewMode] = useState<'events' | 'map'>('events');
   const [activeSubTab, setActiveSubTab] = useState<'lifecycle' | 'attendance' | 'expenses' | 'ai_predictive' | 'map'>('lifecycle');
@@ -55,6 +60,40 @@ export const Meetings: React.FC = () => {
   const [selectedStepIndex, setSelectedStepIndex] = useState<number>(0);
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
   const [isAuditingExpenses, setIsAuditingExpenses] = useState(false);
+
+  // Participant Self Check-In & Voter Registration Modal State
+  const [isParticipantModalOpen, setIsParticipantModalOpen] = useState(false);
+  const [isQrCodeModalOpen, setIsQrCodeModalOpen] = useState(false);
+  const [participantCheckInStep, setParticipantCheckInStep] = useState<'form' | 'success'>('form');
+  const [registeredAttendeeSummary, setRegisteredAttendeeSummary] = useState<{
+    name: string;
+    phone: string;
+    leaderName: string;
+    neighborhood: string;
+    supportLevel: string;
+    checkInTime: string;
+    sector: string;
+  } | null>(null);
+
+  const [participantFormData, setParticipantFormData] = useState({
+    name: '',
+    phone: '',
+    neighborhood: '',
+    selectedLeaderOption: '',
+    customLeaderName: '',
+    age: 32,
+    gender: 'Feminino',
+    votingZone: '',
+    votingSection: '',
+    supportLevel: SupportLevel.LOYAL,
+    interests: ['Comunidade & Bairro', 'Esporte & Lazer'] as string[],
+    sector: 'Plenária Central / Pista',
+    notes: ''
+  });
+
+  // Filters for Attendee Check-In List
+  const [attendeeSearchQuery, setAttendeeSearchQuery] = useState('');
+  const [attendeeFilterLeader, setAttendeeFilterLeader] = useState('ALL');
 
   // New Meeting Form State
   const [newMeeting, setNewMeeting] = useState({
@@ -101,6 +140,7 @@ export const Meetings: React.FC = () => {
   // Dedicated Leader CheckIn Form State
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
   const [selectedLeaderIdForCheckIn, setSelectedLeaderIdForCheckIn] = useState<string>('new');
+  const [deletingLeaderCheckIn, setDeletingLeaderCheckIn] = useState<LeaderCheckIn | null>(null);
   const [checkInFormData, setCheckInFormData] = useState({
     leaderName: '',
     role: 'Liderança Comunitária',
@@ -391,6 +431,39 @@ export const Meetings: React.FC = () => {
     setIsCheckInModalOpen(true);
   };
 
+  // Handle Delete Leader Check-In
+  const handleDeleteLeaderCheckIn = (leaderId: string) => {
+    if (!currentMeeting) return;
+    const leaderToDelete = currentMeeting.leadersCheckIn.find(l => l.id === leaderId);
+    const leaderName = leaderToDelete?.leaderName || 'Liderança';
+
+    setMeetings(prev => prev.map(m => {
+      if (m.id !== currentMeeting.id) return m;
+      const updatedLeaders = m.leadersCheckIn.filter(l => l.id !== leaderId);
+      const leadersPresent = updatedLeaders.filter(l => l.status === 'PRESENTE').length;
+      const supportersMobilized = updatedLeaders
+        .filter(l => l.status === 'PRESENTE' || l.status === 'CONFIRMADO')
+        .reduce((acc, curr) => acc + (curr.actualSupportersPresent !== undefined ? curr.actualSupportersPresent : curr.expectedSupporters), 0);
+
+      return {
+        ...m,
+        leadersCheckIn: updatedLeaders,
+        attendanceData: {
+          ...m.attendanceData,
+          leadersPresentCount: leadersPresent,
+          totalSupportersMobilized: supportersMobilized
+        }
+      };
+    }));
+
+    setDeletingLeaderCheckIn(null);
+    addToast({
+      type: 'info',
+      title: 'Registro de Check-in Excluído',
+      message: `O check-in de "${leaderName}" foi removido da contabilidade do evento.`
+    });
+  };
+
   // Jacobs Sector Modifiers
   const handleAddJacobsSector = () => {
     const newId = 'sec_' + Date.now();
@@ -484,6 +557,233 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
       });
     });
   };
+
+  // Available Leaders for Participant Selection (from current meeting & team database)
+  const allAvailableLeaders = useMemo(() => {
+    const list: Array<{ id: string; name: string; role: string; territory: string; source: 'meeting' | 'team' }> = [];
+    const seenNames = new Set<string>();
+
+    if (currentMeeting) {
+      currentMeeting.leadersCheckIn.forEach(l => {
+        const key = l.leaderName.trim().toLowerCase();
+        if (!seenNames.has(key)) {
+          seenNames.add(key);
+          list.push({
+            id: l.id,
+            name: l.leaderName,
+            role: l.role,
+            territory: l.territory,
+            source: 'meeting'
+          });
+        }
+      });
+    }
+
+    teams.forEach(t => {
+      const key = t.name.trim().toLowerCase();
+      if (!seenNames.has(key)) {
+        seenNames.add(key);
+        list.push({
+          id: t.id,
+          name: t.name,
+          role: t.role,
+          territory: t.territory,
+          source: 'team'
+        });
+      }
+    });
+
+    return list;
+  }, [currentMeeting, teams]);
+
+  // Handle Save Participant Self-Check-in & Voter Registration
+  const handleSaveParticipantCheckIn = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentMeeting) return;
+
+    if (!participantFormData.name.trim()) {
+      addToast({ type: 'warning', title: 'Nome Obrigatório', message: 'Por favor, informe o seu nome completo.' });
+      return;
+    }
+    if (!participantFormData.phone.trim()) {
+      addToast({ type: 'warning', title: 'WhatsApp Obrigatório', message: 'Por favor, informe seu WhatsApp para validação do check-in.' });
+      return;
+    }
+
+    // Resolve Leader Name & ID
+    let resolvedLeaderName = 'Liderança Convidada';
+    let resolvedLeaderId = 'custom';
+
+    if (participantFormData.selectedLeaderOption === 'OTHER' || !participantFormData.selectedLeaderOption) {
+      resolvedLeaderName = participantFormData.customLeaderName.trim() || 'Liderança Comunitária';
+      resolvedLeaderId = 'custom_' + Date.now();
+    } else {
+      const foundTeam = teams.find(t => t.id === participantFormData.selectedLeaderOption || t.name.toLowerCase() === participantFormData.selectedLeaderOption.toLowerCase());
+      if (foundTeam) {
+        resolvedLeaderName = foundTeam.name;
+        resolvedLeaderId = foundTeam.id;
+      } else {
+        const foundInMeeting = currentMeeting.leadersCheckIn.find(l => l.id === participantFormData.selectedLeaderOption || l.leaderName.toLowerCase() === participantFormData.selectedLeaderOption.toLowerCase());
+        if (foundInMeeting) {
+          resolvedLeaderName = foundInMeeting.leaderName;
+          resolvedLeaderId = foundInMeeting.id;
+        } else {
+          resolvedLeaderName = participantFormData.selectedLeaderOption;
+          resolvedLeaderId = 'lead_' + Date.now();
+        }
+      }
+    }
+
+    const checkInTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const voterNeighborhood = participantFormData.neighborhood.trim() || currentMeeting.neighborhood || 'Centro';
+    const voterZone = participantFormData.votingZone.trim() || currentMeeting.votingZone || '001';
+
+    // 1. Cadastrar como Eleitor no Banco de Dados Global da Campanha
+    const newVoter = addVoter({
+      name: participantFormData.name.trim(),
+      age: Number(participantFormData.age) || 30,
+      gender: participantFormData.gender || 'Não Informado',
+      neighborhood: voterNeighborhood,
+      votingZone: voterZone,
+      votingSection: participantFormData.votingSection.trim() || '0100',
+      supportLevel: participantFormData.supportLevel,
+      lastContact: new Date().toISOString().split('T')[0],
+      leaderId: resolvedLeaderId,
+      coordinates: currentMeeting.coordinates || { lat: -23.5505, lng: -46.6333 },
+      socioEconomic: 'Classe Média / Popular',
+      interests: participantFormData.interests.length > 0 ? participantFormData.interests : ['Comunidade & Bairro', 'Esporte & Lazer'],
+      phone: participantFormData.phone.trim()
+    });
+
+    // 2. Criar registro de Check-in do Participante
+    const newAttendee: MeetingAttendeeCheckIn = {
+      id: 'att_' + Date.now(),
+      voterId: newVoter.id,
+      name: participantFormData.name.trim(),
+      phone: participantFormData.phone.trim(),
+      neighborhood: voterNeighborhood,
+      leaderId: resolvedLeaderId,
+      leaderName: resolvedLeaderName,
+      supportLevel: participantFormData.supportLevel,
+      checkInTime,
+      sector: participantFormData.sector || 'Plenária Central / Pista',
+      votingZone: voterZone,
+      votingSection: participantFormData.votingSection.trim(),
+      interests: participantFormData.interests,
+      notes: participantFormData.notes.trim()
+    };
+
+    // 3. Atualizar a Reunião com o novo Participante e incrementar a liderança
+    setMeetings(prev => prev.map(m => {
+      if (m.id !== currentMeeting.id) return m;
+
+      let updatedLeaders = [...m.leadersCheckIn];
+      const existingLeaderIndex = updatedLeaders.findIndex(
+        l => l.id === resolvedLeaderId || l.leaderName.toLowerCase() === resolvedLeaderName.toLowerCase()
+      );
+
+      if (existingLeaderIndex >= 0) {
+        const leader = updatedLeaders[existingLeaderIndex];
+        const currentCount = leader.actualSupportersPresent !== undefined ? leader.actualSupportersPresent : leader.expectedSupporters;
+        updatedLeaders[existingLeaderIndex] = {
+          ...leader,
+          status: 'PRESENTE',
+          actualSupportersPresent: currentCount + 1,
+          checkInTime: leader.checkInTime || checkInTime
+        };
+      } else {
+        updatedLeaders.push({
+          id: resolvedLeaderId.startsWith('custom') || resolvedLeaderId.startsWith('lead') ? resolvedLeaderId : 'lc_' + Date.now(),
+          leaderName: resolvedLeaderName,
+          role: 'Liderança Comunitária',
+          territory: voterNeighborhood,
+          phone: '',
+          expectedSupporters: 1,
+          actualSupportersPresent: 1,
+          sector: participantFormData.sector || 'Plenária Central / Pista',
+          status: 'PRESENTE',
+          checkInTime
+        });
+      }
+
+      const attendeesList = [...(m.attendeeCheckIns || []), newAttendee];
+      const totalMobilized = (m.attendanceData?.totalSupportersMobilized || 0) + 1;
+      const manualCount = (m.attendanceData?.manualCount || 0) + 1;
+      const leadersPresent = updatedLeaders.filter(l => l.status === 'PRESENTE').length;
+
+      return {
+        ...m,
+        leadersCheckIn: updatedLeaders,
+        attendeeCheckIns: attendeesList,
+        attendanceData: {
+          ...m.attendanceData,
+          leadersPresentCount: leadersPresent,
+          totalSupportersMobilized: totalMobilized,
+          manualCount: manualCount
+        }
+      };
+    }));
+
+    // 4. Incrementar meta atingida do TeamMember se aplicável
+    const teamMember = teams.find(t => t.id === resolvedLeaderId || t.name.toLowerCase() === resolvedLeaderName.toLowerCase());
+    if (teamMember) {
+      updateTeamMember(teamMember.id, { achieved: (teamMember.achieved || 0) + 1 });
+    }
+
+    // 5. Exibir tela de confirmação
+    setRegisteredAttendeeSummary({
+      name: participantFormData.name.trim(),
+      phone: participantFormData.phone.trim(),
+      leaderName: resolvedLeaderName,
+      neighborhood: voterNeighborhood,
+      supportLevel: participantFormData.supportLevel,
+      checkInTime,
+      sector: participantFormData.sector || 'Plenária Central / Pista'
+    });
+
+    setParticipantCheckInStep('success');
+
+    addToast({
+      type: 'success',
+      title: '🎉 Check-in & Cadastro Realizado!',
+      message: `${participantFormData.name} foi cadastrado como eleitor e confirmado no evento vinculado à liderança "${resolvedLeaderName}".`
+    });
+  };
+
+  // Reset Participant Check-in Form
+  const handleResetParticipantForm = () => {
+    setParticipantFormData({
+      name: '',
+      phone: '',
+      neighborhood: currentMeeting?.neighborhood || '',
+      selectedLeaderOption: allAvailableLeaders[0]?.id || '',
+      customLeaderName: '',
+      age: 32,
+      gender: 'Feminino',
+      votingZone: currentMeeting?.votingZone || '',
+      votingSection: '',
+      supportLevel: SupportLevel.LOYAL,
+      interests: ['Comunidade & Bairro', 'Esporte & Lazer'],
+      sector: 'Plenária Central / Pista',
+      notes: ''
+    });
+    setParticipantCheckInStep('form');
+  };
+
+  // Filtered Attendees for current meeting
+  const filteredAttendees = useMemo(() => {
+    if (!currentMeeting || !currentMeeting.attendeeCheckIns) return [];
+    return currentMeeting.attendeeCheckIns.filter(att => {
+      const q = attendeeSearchQuery.toLowerCase();
+      const matchesSearch = !q || 
+        att.name.toLowerCase().includes(q) ||
+        att.phone.toLowerCase().includes(q) ||
+        att.neighborhood.toLowerCase().includes(q) ||
+        att.leaderName.toLowerCase().includes(q);
+      const matchesLeader = attendeeFilterLeader === 'ALL' || att.leaderId === attendeeFilterLeader || att.leaderName === attendeeFilterLeader;
+      return matchesSearch && matchesLeader;
+    });
+  }, [currentMeeting, attendeeSearchQuery, attendeeFilterLeader]);
 
   // Handle Add New Expense with TSE Compliance Checks
   const handleAddExpense = (e: React.FormEvent) => {
@@ -1785,7 +2085,31 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center flex-wrap gap-2">
+                    {/* Auto-Check-in do Eleitor / Totem Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleResetParticipantForm();
+                        setIsParticipantModalOpen(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95 border border-emerald-400/30"
+                    >
+                      <Smartphone size={15} />
+                      <span>📲 Auto-Check-in do Eleitor (Totem)</span>
+                    </button>
+
+                    {/* QR Code Modal Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsQrCodeModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
+                      title="Exibir QR Code para os participantes escanearem com o celular"
+                    >
+                      <QrCode size={15} className="text-slate-600" />
+                      <span>QR Code</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -1803,10 +2127,10 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                         });
                         setIsCheckInModalOpen(true);
                       }}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
                     >
                       <UserPlus size={15} />
-                      Registrar Check-In Rápido
+                      Registrar Liderança
                     </button>
                   </div>
                 </div>
@@ -2051,6 +2375,16 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                             <UserCheck size={14} />
                           </button>
 
+                          {/* Delete Check-in Button */}
+                          <button
+                            type="button"
+                            onClick={() => setDeletingLeaderCheckIn(leader)}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors"
+                            title="Excluir Registro de Check-in"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+
                           {/* WhatsApp Fast Contact */}
                           {cleanPhone && (
                             <a
@@ -2073,6 +2407,207 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                       <Users size={24} className="mx-auto text-slate-300 mb-1" />
                       <p className="text-xs text-slate-500 font-bold">Nenhuma liderança encontrada com os filtros atuais.</p>
                       <p className="text-[11px] text-slate-400 mt-0.5">Cadastre um novo check-in ou limpe os filtros de busca.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ========================================================================= */}
+              {/* ATTENDEE SELF-CHECK-IN & REGISTERED VOTERS ROSTER                        */}
+              {/* ========================================================================= */}
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-black rounded-md uppercase tracking-wider">
+                        Participação Direta do Eleitor
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium">Auto-Cadastro e Check-in com Liderança</span>
+                    </div>
+                    <h3 className="text-base font-black text-slate-900 mt-1 flex items-center gap-2">
+                      <Smartphone size={18} className="text-blue-600" />
+                      <span>Eleitores Cadastrados no Evento via Auto-Check-in</span>
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-black rounded-full">
+                        {currentMeeting.attendeeCheckIns?.length || 0}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Participantes que abriram o totem/link, se cadastraram como eleitores e vincularam sua presença a uma liderança.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleResetParticipantForm();
+                        setIsParticipantModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
+                    >
+                      <Plus size={15} />
+                      Novo Auto-Check-in
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter and Search Bar for Attendees */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="relative md:col-span-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nome do participante, WhatsApp, bairro ou líder..."
+                      value={attendeeSearchQuery}
+                      onChange={(e) => setAttendeeSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 transition-all font-medium"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Filter size={14} className="text-slate-400 shrink-0" />
+                    <select
+                      value={attendeeFilterLeader}
+                      onChange={(e) => setAttendeeFilterLeader(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-semibold text-slate-700 cursor-pointer"
+                    >
+                      <option value="ALL">Todas as Lideranças Vinculadas</option>
+                      {allAvailableLeaders.map(l => (
+                        <option key={l.id} value={l.name}>{l.name} ({l.role})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Attendees List Cards */}
+                <div className="space-y-3">
+                  {filteredAttendees.map((att) => {
+                    const cleanPhone = att.phone?.replace(/\D/g, '');
+                    const supportBadgeColor = 
+                      att.supportLevel === SupportLevel.LOYAL ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                      att.supportLevel === SupportLevel.INDECISIVE ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      att.supportLevel === SupportLevel.OPPOSITION ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                      'bg-slate-50 text-slate-700 border-slate-200';
+
+                    return (
+                      <div
+                        key={att.id}
+                        className="p-4 rounded-2xl border border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-3"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                            {att.name.charAt(0).toUpperCase()}
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-xs font-black text-slate-900">{att.name}</h4>
+                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${supportBadgeColor}`}>
+                                {att.supportLevel}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                <Clock size={11} />
+                                {att.checkInTime}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
+                              <span className="flex items-center gap-1 text-slate-700 font-bold bg-slate-100 px-2 py-0.5 rounded-md">
+                                <HeartHandshake size={12} className="text-blue-600" />
+                                Liderança: {att.leaderName}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <MapPin size={12} className="text-slate-400" />
+                                {att.neighborhood} {att.votingZone ? `• Zona ${att.votingZone}` : ''}
+                              </span>
+                              <span className="flex items-center gap-1 text-slate-500 font-medium">
+                                <Layers size={12} className="text-slate-400" />
+                                {att.sector}
+                              </span>
+                            </div>
+
+                            {/* Interests tags */}
+                            {att.interests && att.interests.length > 0 && (
+                              <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                                {att.interests.map((interest, idx) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[9px] font-semibold rounded border border-slate-200">
+                                    {interest}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {att.notes && (
+                              <p className="text-[11px] text-slate-500 italic bg-amber-50/70 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-100 mt-1 inline-block">
+                                "{att.notes}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                          {cleanPhone && (
+                            <a
+                              href={`https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${att.name}, obrigado por comparecer ao evento "${currentMeeting.title}" e por apoiar o time da liderança ${att.leaderName}! Conte sempre conosco.`)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 transition-colors"
+                              title="Enviar mensagem de boas-vindas no WhatsApp"
+                            >
+                              <MessageSquare size={13} />
+                              <span>WhatsApp</span>
+                            </a>
+                          )}
+                          <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
+                            <CheckCircle2 size={12} className="text-emerald-600" />
+                            Eleitor Cadastrado
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {(!currentMeeting.attendeeCheckIns || currentMeeting.attendeeCheckIns.length === 0) && (
+                    <div className="text-center py-10 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 space-y-3">
+                      <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                        <Smartphone size={24} />
+                      </div>
+                      <div className="space-y-1 max-w-sm mx-auto">
+                        <h4 className="text-xs font-bold text-slate-800">Nenhum participante cadastrado via auto-check-in ainda</h4>
+                        <p className="text-[11px] text-slate-500">
+                          Abra o Totem de Auto-Atendimento em um tablet na recepção ou projete o QR Code para que os próprios participantes façam check-in e indiquem sua liderança.
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleResetParticipantForm();
+                            setIsParticipantModalOpen(true);
+                          }}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                        >
+                          <Smartphone size={14} />
+                          Abrir Totem de Auto-Check-in
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsQrCodeModalOpen(true)}
+                          className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5"
+                        >
+                          <QrCode size={14} />
+                          Projetar QR Code
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentMeeting.attendeeCheckIns && currentMeeting.attendeeCheckIns.length > 0 && filteredAttendees.length === 0 && (
+                    <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <Users size={24} className="mx-auto text-slate-300 mb-1" />
+                      <p className="text-xs text-slate-500 font-bold">Nenhum participante encontrado com os filtros aplicados.</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">Tente outro termo de busca ou selecione "Todas as Lideranças".</p>
                     </div>
                   )}
                 </div>
@@ -2867,23 +3402,111 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsCheckInModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
-                >
-                  <Check size={14} />
-                  Salvar Check-In
-                </button>
+              <div className="flex items-center justify-between gap-2 pt-4 border-t border-slate-100">
+                <div>
+                  {selectedLeaderIdForCheckIn !== 'new' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = currentMeeting?.leadersCheckIn.find(l => l.id === selectedLeaderIdForCheckIn);
+                        if (target) {
+                          setIsCheckInModalOpen(false);
+                          setDeletingLeaderCheckIn(target);
+                        }
+                      }}
+                      className="px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-1.5 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                      Excluir Check-in
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCheckInModalOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                  >
+                    <Check size={14} />
+                    Salvar Check-In
+                  </button>
+                </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CONFIRMAR EXCLUSÃO DE REGISTRO DE CHECK-IN                         */}
+      {/* ========================================================================= */}
+      {deletingLeaderCheckIn && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                <Trash2 size={32} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-slate-900">Excluir Registro de Check-in?</h3>
+                <p className="text-xs text-slate-500">
+                  Deseja remover o check-in de <strong>{deletingLeaderCheckIn.leaderName}</strong> da contabilidade deste evento?
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2 text-xs text-slate-600">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Liderança / Cargo</span>
+                <span className="font-bold text-slate-800">{deletingLeaderCheckIn.leaderName} ({deletingLeaderCheckIn.role})</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Setor no Evento</span>
+                <span className="font-bold text-slate-800">{deletingLeaderCheckIn.sector || 'Plenária Central'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Apoiadores Reportados</span>
+                <span className="font-black text-emerald-700">
+                  {deletingLeaderCheckIn.actualSupportersPresent !== undefined ? deletingLeaderCheckIn.actualSupportersPresent : deletingLeaderCheckIn.expectedSupporters} pessoas
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Status Registrado</span>
+                <span className="font-bold px-2 py-0.5 rounded text-[10px] bg-slate-200 text-slate-800">
+                  {deletingLeaderCheckIn.status}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
+              <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+              <span>O quórum geral de apoiadores mobilizados e contagem de lideranças presentes serão recalculados automaticamente.</span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeletingLeaderCheckIn(null)}
+                className="flex-1 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteLeaderCheckIn(deletingLeaderCheckIn.id)}
+                className="flex-[1.5] py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-1.5"
+              >
+                <Trash2 size={15} />
+                Confirmar Exclusão
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -3106,6 +3729,507 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                 Confirmar Reatribuição
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: AUTO-CHECK-IN & CADASTRO DE ELEITOR DO PARTICIPANTE (TOTEM)        */}
+      {/* ========================================================================= */}
+      {isParticipantModalOpen && currentMeeting && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl border border-slate-100 space-y-5 my-auto max-h-[92vh] flex flex-col justify-between overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
+                  <Smartphone size={20} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase rounded tracking-wider">
+                      Auto-Atendimento • Totem
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-semibold">{currentMeeting.date}</span>
+                  </div>
+                  <h3 className="text-base font-black text-slate-900 leading-tight">
+                    Cadastro de Eleitor & Check-in de Presença
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsParticipantModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-y-auto pr-1 space-y-4 flex-1">
+              {participantCheckInStep === 'form' ? (
+                <form id="participant-checkin-form" onSubmit={handleSaveParticipantCheckIn} className="space-y-4">
+                  
+                  {/* Event Summary Banner */}
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between flex-wrap gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={14} className="text-blue-600" />
+                      <span className="font-bold text-slate-800">{currentMeeting.venueName}</span>
+                      <span className="text-slate-400">•</span>
+                      <span className="text-slate-600">{currentMeeting.neighborhood}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200 font-medium">
+                      Zona {currentMeeting.votingZone}
+                    </span>
+                  </div>
+
+                  {/* Section 1: Liderança Responsável */}
+                  <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-blue-950 flex items-center gap-1.5 uppercase tracking-wide">
+                        <HeartHandshake size={15} className="text-blue-600" />
+                        1. Qual é a sua Liderança de Referência? *
+                      </label>
+                      <span className="text-[10px] text-blue-700 font-semibold bg-blue-100/70 px-2 py-0.5 rounded">
+                        Obrigatório
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-blue-900/80">
+                      Selecione quem convidou você ou a liderança do seu bairro/grupo para pontuar na meta dela:
+                    </p>
+
+                    <div className="grid grid-cols-1 gap-2">
+                      <select
+                        required
+                        value={participantFormData.selectedLeaderOption}
+                        onChange={(e) => setParticipantFormData({ ...participantFormData, selectedLeaderOption: e.target.value })}
+                        className="w-full px-3.5 py-2.5 text-xs bg-white border border-blue-200 rounded-xl outline-none focus:border-blue-500 font-bold text-slate-800 shadow-sm cursor-pointer"
+                      >
+                        <option value="">-- Selecione sua Liderança na Lista --</option>
+                        {allAvailableLeaders.map((leader) => (
+                          <option key={leader.id} value={leader.id}>
+                            {leader.name} — {leader.role} ({leader.territory})
+                          </option>
+                        ))}
+                        <option value="OTHER">➕ Outra Liderança / Não Listada (Digitar Nome)</option>
+                      </select>
+
+                      {participantFormData.selectedLeaderOption === 'OTHER' && (
+                        <div className="pt-2 animate-in fade-in space-y-1">
+                          <label className="text-[11px] font-bold text-blue-900">Digite o Nome da Liderança:</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Ex: Pastor Marcos, Dona Lurdes, Prof. Carlos..."
+                            value={participantFormData.customLeaderName}
+                            onChange={(e) => setParticipantFormData({ ...participantFormData, customLeaderName: e.target.value })}
+                            className="w-full px-3 py-2 text-xs bg-white border border-blue-300 rounded-xl outline-none focus:border-blue-500 font-bold text-slate-900"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Section 2: Dados Pessoais do Eleitor */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                    <label className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                      <User size={15} className="text-slate-700" />
+                      2. Seus Dados de Identificação & Contato
+                    </label>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1 sm:col-span-2">
+                        <label className="text-[11px] font-bold text-slate-700">Nome Completo *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Digite seu nome completo"
+                          value={participantFormData.name}
+                          onChange={(e) => setParticipantFormData({ ...participantFormData, name: e.target.value })}
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold text-slate-900"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-700">WhatsApp / Telefone *</label>
+                        <input
+                          type="tel"
+                          required
+                          placeholder="(11) 98888-0000"
+                          value={participantFormData.phone}
+                          onChange={(e) => setParticipantFormData({ ...participantFormData, phone: e.target.value })}
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold text-slate-900"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-700">Bairro de Residência *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Ex: Itaquera, Pinheiros, Centro..."
+                          value={participantFormData.neighborhood}
+                          onChange={(e) => setParticipantFormData({ ...participantFormData, neighborhood: e.target.value })}
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold text-slate-900"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">Idade</label>
+                          <input
+                            type="number"
+                            min="16"
+                            max="110"
+                            value={participantFormData.age}
+                            onChange={(e) => setParticipantFormData({ ...participantFormData, age: Number(e.target.value) })}
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-slate-900 font-semibold"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">Gênero</label>
+                          <select
+                            value={participantFormData.gender}
+                            onChange={(e) => setParticipantFormData({ ...participantFormData, gender: e.target.value })}
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-900 font-semibold cursor-pointer"
+                          >
+                            <option value="Feminino">Feminino</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Não-binário">Não-binário</option>
+                            <option value="Prefiro não dizer">Prefiro não dizer</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">Zona Eleitoral</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: 094"
+                            value={participantFormData.votingZone}
+                            onChange={(e) => setParticipantFormData({ ...participantFormData, votingZone: e.target.value })}
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-900 font-semibold"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-slate-700">Seção (Opcional)</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: 0142"
+                            value={participantFormData.votingSection}
+                            onChange={(e) => setParticipantFormData({ ...participantFormData, votingSection: e.target.value })}
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-900 font-semibold"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Engajamento Político & Interesses */}
+                  <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-3">
+                    <label className="text-xs font-black text-emerald-950 flex items-center gap-1.5 uppercase tracking-wide">
+                      <Sparkles size={15} className="text-emerald-600" />
+                      3. Engajamento & Pautas de Interesse
+                    </label>
+
+                    {/* Support Level Buttons */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-700">Termômetro de Apoio:</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { level: SupportLevel.LOYAL, label: 'Apoiador Fiel', desc: 'Voto Declarado', color: 'emerald' },
+                          { level: SupportLevel.INDECISIVE, label: 'Indeciso', desc: 'Quer Conhecer', color: 'amber' },
+                          { level: SupportLevel.NEUTRAL, label: 'Neutro', desc: 'Convidado', color: 'slate' },
+                          { level: SupportLevel.OPPOSITION, label: 'Crítico', desc: 'Avaliando', color: 'rose' }
+                        ].map((opt) => {
+                          const isSelected = participantFormData.supportLevel === opt.level;
+                          return (
+                            <button
+                              key={opt.level}
+                              type="button"
+                              onClick={() => setParticipantFormData({ ...participantFormData, supportLevel: opt.level })}
+                              className={`p-2.5 rounded-xl border text-left transition-all ${
+                                isSelected
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm font-bold'
+                                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="text-xs font-bold leading-none">{opt.label}</div>
+                              <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-emerald-100' : 'text-slate-400'}`}>
+                                {opt.desc}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Pautas de Interesse Chips */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[11px] font-bold text-slate-700">Pautas Prioritárias que Você Acompanha:</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          'Saúde & UBS', 'Educação & Creches', 'Segurança Pública', 'Esporte & Lazer',
+                          'Emprego & Renda', 'Pavimentação & Asfalto', 'Mulheres & Família', 'Juventude & Cultura',
+                          'Meio Ambiente', 'Transporte Público'
+                        ].map((tag) => {
+                          const isSelected = participantFormData.interests.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => {
+                                const exists = participantFormData.interests.includes(tag);
+                                const updated = exists
+                                  ? participantFormData.interests.filter(t => t !== tag)
+                                  : [...participantFormData.interests, tag];
+                                setParticipantFormData({ ...participantFormData, interests: updated });
+                              }}
+                              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+                                isSelected
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Sector in Event */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-700">Setor onde você vai ficar no evento:</label>
+                        <select
+                          value={participantFormData.sector}
+                          onChange={(e) => setParticipantFormData({ ...participantFormData, sector: e.target.value })}
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none font-semibold text-slate-800 cursor-pointer"
+                        >
+                          <option value="Plenária Central / Pista">Plenária Central / Pista</option>
+                          <option value="Frente do Palco / VIP">Frente do Palco / VIP</option>
+                          <option value="Fundo & Acesso / Tenda">Fundo & Acesso / Tenda</option>
+                          <option value="Bancada de Lideranças">Bancada de Lideranças</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-700">Sugestão ou Demanda (Opcional):</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Mais iluminação na praça..."
+                          value={participantFormData.notes}
+                          onChange={(e) => setParticipantFormData({ ...participantFormData, notes: e.target.value })}
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl outline-none text-slate-800"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                </form>
+              ) : (
+                /* Step 2: Confirmation / Success Screen */
+                <div className="py-6 text-center space-y-5 animate-in zoom-in-95 duration-200">
+                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-600 text-white rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/30">
+                    <CheckCircle2 size={44} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-slate-900">
+                      🎉 Check-in & Cadastro Confirmado!
+                    </h3>
+                    <p className="text-sm font-bold text-emerald-700">
+                      Seja muito bem-vindo(a), {registeredAttendeeSummary?.name}!
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Sua presença foi registrada e seu cadastro eleitoral já está ativo na campanha.
+                    </p>
+                  </div>
+
+                  <div className="max-w-md mx-auto p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-2.5 text-left">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">Liderança Vinculada</span>
+                      <span className="font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        {registeredAttendeeSummary?.leaderName}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">Bairro</span>
+                      <span className="font-bold text-slate-800">{registeredAttendeeSummary?.neighborhood}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">WhatsApp</span>
+                      <span className="font-bold text-slate-800">{registeredAttendeeSummary?.phone}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">Horário de Check-in</span>
+                      <span className="font-bold text-slate-800">{registeredAttendeeSummary?.checkInTime}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">Setor no Evento</span>
+                      <span className="font-bold text-slate-800">{registeredAttendeeSummary?.sector}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                      <span className="text-slate-400 font-bold uppercase text-[10px]">Perfil de Apoio</span>
+                      <span className="font-bold text-emerald-700">{registeredAttendeeSummary?.supportLevel}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 flex items-center justify-center gap-2 max-w-md mx-auto">
+                    <CheckCheck size={16} className="text-emerald-600 shrink-0" />
+                    <span>Contabilidade e metas da liderança atualizadas em tempo real.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
+              {participantCheckInStep === 'form' ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsParticipantModalOpen(false)}
+                    className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    form="participant-checkin-form"
+                    className="px-6 py-2.5 text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 active:scale-95"
+                  >
+                    <CheckCircle2 size={16} />
+                    <span>Confirmar Meu Check-in & Cadastro</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsParticipantModalOpen(false)}
+                    className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    Fechar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetParticipantForm}
+                    className="px-6 py-2.5 text-xs font-black text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95"
+                  >
+                    <Plus size={16} />
+                    <span>Cadastrar Próximo Participante (Totem)</span>
+                  </button>
+                </>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: QR CODE DE AUTO-CHECK-IN DO EVENTO                                 */}
+      {/* ========================================================================= */}
+      {isQrCodeModalOpen && currentMeeting && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5 text-center">
+            
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2 text-left">
+                <QrCode size={20} className="text-blue-600" />
+                <h3 className="text-base font-black text-slate-900">QR Code de Auto-Check-in</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQrCodeModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-1 text-xs text-slate-500">
+              <p className="font-bold text-slate-800">{currentMeeting.title}</p>
+              <p>{currentMeeting.venueName} • {currentMeeting.neighborhood}</p>
+            </div>
+
+            {/* High Contrast Simulated QR Code Graphic */}
+            <div className="p-6 bg-white border-2 border-slate-900 rounded-3xl inline-block mx-auto shadow-md">
+              <div className="w-48 h-48 bg-slate-900 rounded-xl p-3 flex flex-col items-center justify-between relative overflow-hidden">
+                <div className="flex justify-between w-full">
+                  <div className="w-10 h-10 border-4 border-white bg-slate-900 p-1 flex items-center justify-center">
+                    <div className="w-4 h-4 bg-white"></div>
+                  </div>
+                  <div className="w-10 h-10 border-4 border-white bg-slate-900 p-1 flex items-center justify-center">
+                    <div className="w-4 h-4 bg-white"></div>
+                  </div>
+                </div>
+
+                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg text-blue-600">
+                  <Smartphone size={28} />
+                </div>
+
+                <div className="flex justify-between w-full">
+                  <div className="w-10 h-10 border-4 border-white bg-slate-900 p-1 flex items-center justify-center">
+                    <div className="w-4 h-4 bg-white"></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 w-8 h-8">
+                    <div className="bg-white"></div>
+                    <div className="bg-white"></div>
+                    <div className="bg-white"></div>
+                    <div className="bg-white"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 font-medium">
+              Aponte a câmera do celular para abrir a tela de auto-cadastro e check-in vinculado à sua liderança.
+            </p>
+
+            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] font-mono text-slate-700 break-all select-all">
+              https://campanha.app/checkin/{currentMeeting.id}
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`https://campanha.app/checkin/${currentMeeting.id}`);
+                  addToast({ type: 'success', title: 'Link Copiado!', message: 'Link de check-in copiado para a área de transferência.' });
+                }}
+                className="flex-1 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all flex items-center justify-center gap-1.5"
+              >
+                <Copy size={14} />
+                Copiar Link
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsQrCodeModalOpen(false);
+                  handleResetParticipantForm();
+                  setIsParticipantModalOpen(true);
+                }}
+                className="flex-1 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+              >
+                <Smartphone size={14} />
+                Abrir Totem
+              </button>
+            </div>
+
           </div>
         </div>
       )}
