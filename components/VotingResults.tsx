@@ -29,6 +29,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { MOCK_CANDIDATES, MOCK_TALLY_STATS } from '../constants';
 import { BallotReport } from '../types';
 import { useToast } from './Toast';
+import { useDatabase } from './DatabaseContext';
 
 const BallotReportModal: React.FC<{ onClose: () => void; onSave: (report: any) => void; existingReports: BallotReport[] }> = ({ onClose, onSave, existingReports }) => {
   const [formData, setFormData] = useState({
@@ -178,7 +179,7 @@ const BallotReportModal: React.FC<{ onClose: () => void; onSave: (report: any) =
 
 const VotingResults: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'OFFICIAL' | 'PARALLEL'>('OFFICIAL');
-  const [reports, setReports] = useState<BallotReport[]>([]);
+  const { ballotReports: reports, setBallotReports: setReports } = useDatabase();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showToast } = useToast();
   

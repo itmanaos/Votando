@@ -7,7 +7,8 @@ import {
   Volume2, Utensils, Droplets, Wrench, PlayCircle, Archive, Award,
   Info, ShieldCheck, Check, MessageSquare, Compass, Map as MapIcon,
   Layers, Radio, Calculator, Sliders, Copy, Share2, TrendingUp,
-  BarChart3, AlertOctagon, CheckCheck, UserPlus, FileSpreadsheet
+  BarChart3, AlertOctagon, CheckCheck, UserPlus, FileSpreadsheet,
+  RotateCcw
 } from 'lucide-react';
 import { 
   Meeting, MeetingType, MeetingStatus, StepStatus, RACIRole, 
@@ -17,6 +18,7 @@ import {
 import { MOCK_MEETINGS, DEFAULT_LIFECYCLE_STEPS, MOCK_TEAMS } from '../constants';
 import { analyzeMeetingSuccessPredictive, auditMeetingExpensesTSE } from '../geminiService';
 import { useToast } from './Toast';
+import { useDatabase } from './DatabaseContext';
 import MeetingMapViewer from './MeetingMapViewer';
 
 const STEP_ICONS: Record<number, React.ElementType> = {
@@ -33,8 +35,8 @@ const STEP_ICONS: Record<number, React.ElementType> = {
 
 export const Meetings: React.FC = () => {
   const { addToast } = useToast();
-  const [meetings, setMeetings] = useState<Meeting[]>(MOCK_MEETINGS);
-  const [selectedMeetingId, setSelectedMeetingId] = useState<string>(MOCK_MEETINGS[0].id);
+  const { meetings, setMeetings, addMeeting, updateMeeting, deleteMeeting, restoreDemoData } = useDatabase();
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string>(() => meetings[0]?.id || '');
   const [viewMode, setViewMode] = useState<'events' | 'map'>('events');
   const [activeSubTab, setActiveSubTab] = useState<'lifecycle' | 'attendance' | 'expenses' | 'ai_predictive' | 'map'>('lifecycle');
   
@@ -118,22 +120,29 @@ export const Meetings: React.FC = () => {
 
   // Currently Selected Meeting
   const currentMeeting = useMemo(() => {
-    return meetings.find(m => m.id === selectedMeetingId) || meetings[0];
+    if (meetings.length === 0) return null;
+    return meetings.find(m => m.id === selectedMeetingId) || meetings[0] || null;
   }, [meetings, selectedMeetingId]);
 
   // Filtered Meetings List
   const filteredMeetings = useMemo(() => {
-    return meetings.filter(m => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = m.title.toLowerCase().includes(q) ||
-                            m.neighborhood.toLowerCase().includes(q) ||
-                            m.venueName.toLowerCase().includes(q) ||
-                            m.coordinatorName.toLowerCase().includes(q);
-      const matchesType = filterType === 'ALL' || m.type === filterType;
-      const matchesStatus = filterStatus === 'ALL' || m.status === filterStatus;
-      const matchesCoordinator = filterCoordinator === 'ALL' || m.coordinatorId === filterCoordinator;
-      return matchesSearch && matchesType && matchesStatus && matchesCoordinator;
-    });
+    return meetings
+      .filter(m => {
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = m.title.toLowerCase().includes(q) ||
+                              m.neighborhood.toLowerCase().includes(q) ||
+                              m.venueName.toLowerCase().includes(q) ||
+                              m.coordinatorName.toLowerCase().includes(q);
+        const matchesType = filterType === 'ALL' || m.type === filterType;
+        const matchesStatus = filterStatus === 'ALL' || m.status === filterStatus;
+        const matchesCoordinator = filterCoordinator === 'ALL' || m.coordinatorId === filterCoordinator;
+        return matchesSearch && matchesType && matchesStatus && matchesCoordinator;
+      })
+      .sort((a, b) => {
+        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return a.startTime.localeCompare(b.startTime);
+      });
   }, [meetings, searchQuery, filterType, filterStatus, filterCoordinator]);
 
   // Conflict Matrix Checker for scheduling
@@ -159,6 +168,7 @@ export const Meetings: React.FC = () => {
 
   // Handle Lifecycle Step Checklist Toggle
   const handleToggleChecklistItem = (stepId: number, itemId: string) => {
+    if (!currentMeeting) return;
     setMeetings(prev => prev.map(m => {
       if (m.id !== currentMeeting.id) return m;
 
@@ -198,6 +208,7 @@ export const Meetings: React.FC = () => {
 
   // Handle Step Status Direct Change (with sequential gate verification)
   const handleUpdateStepStatus = (stepId: number, newStatus: StepStatus) => {
+    if (!currentMeeting) return;
     // Sequential Gate Check: Can't complete step N if step N-1 is not completed
     if (newStatus === StepStatus.COMPLETED && stepId > 1) {
       const prevStep = currentMeeting.lifecycleSteps.find(s => s.id === stepId - 1);
@@ -235,6 +246,7 @@ export const Meetings: React.FC = () => {
 
   // Handle Leader Check-In Status Change with automatic time stamping
   const handleLeaderStatusChange = (leaderId: string, status: LeaderCheckIn['status']) => {
+    if (!currentMeeting) return;
     setMeetings(prev => prev.map(m => {
       if (m.id !== currentMeeting.id) return m;
       const updatedLeaders = m.leadersCheckIn.map(l => {
@@ -274,6 +286,7 @@ export const Meetings: React.FC = () => {
   // Handle Save / Register Leader Check-In from dedicated form
   const handleSaveLeaderCheckIn = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentMeeting) return;
     if (!checkInFormData.leaderName.trim()) {
       addToast({ type: 'error', title: 'Nome Obrigatório', message: 'Informe o nome da liderança ou multiplicador.' });
       return;
@@ -406,6 +419,7 @@ export const Meetings: React.FC = () => {
 
   // Apply Jacobs Estimate to Confirmed Attendance
   const handleApplyJacobsToMeeting = (calculatedCount: number, avgDensity: number, totalArea: number) => {
+    if (!currentMeeting) return;
     setMeetings(prev => prev.map(m => {
       if (m.id !== currentMeeting.id) return m;
       return {
@@ -429,6 +443,7 @@ export const Meetings: React.FC = () => {
 
   // Copy Full Technical Crowd & Check-in Bulletin to Clipboard
   const handleCopyJacobsBulletin = (calculatedCount: number, avgDensity: number, totalArea: number, leadersPresentCount: number, supportersCount: number) => {
+    if (!currentMeeting) return;
     const occupancyPercent = currentMeeting.venueCapacity > 0 ? Math.round((calculatedCount / currentMeeting.venueCapacity) * 100) : 0;
     const bulletinText = `=====================================================
 📋 BOLETIM TÉCNICO DE AUDITORIA DE PÚBLICO (MÉTODO DE JACOBS)
@@ -473,6 +488,7 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
   // Handle Add New Expense with TSE Compliance Checks
   const handleAddExpense = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentMeeting) return;
     const amountNum = parseFloat(newExpense.amount);
     if (!newExpense.description || isNaN(amountNum) || amountNum <= 0 || !newExpense.supplierTaxId) {
       addToast({
@@ -638,6 +654,7 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
 
   // Run AI Predictive Analysis via Gemini
   const handleRunAiPredictive = async () => {
+    if (!currentMeeting) return;
     setIsAnalyzingAi(true);
     try {
       const result = await analyzeMeetingSuccessPredictive(currentMeeting);
@@ -666,6 +683,7 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
 
   // Run TSE Legal Expense Audit via Gemini
   const handleRunTseAudit = async () => {
+    if (!currentMeeting) return;
     setIsAuditingExpenses(true);
     try {
       const audit = await auditMeetingExpensesTSE(currentMeeting.expenses, currentMeeting.title);
@@ -700,27 +718,29 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
   const effectiveAverageDensity = effectiveTotalArea > 0 ? parseFloat((calculatedJacobsPublic / effectiveTotalArea).toFixed(2)) : densityFactor;
 
   // Lideranças Check-in Statistics
-  const leadersPresentList = currentMeeting.leadersCheckIn.filter(l => l.status === 'PRESENTE');
-  const leadersConfirmedList = currentMeeting.leadersCheckIn.filter(l => l.status === 'CONFIRMADO');
+  const leadersCheckInList = currentMeeting?.leadersCheckIn || [];
+  const leadersPresentList = leadersCheckInList.filter(l => l.status === 'PRESENTE');
+  const leadersConfirmedList = leadersCheckInList.filter(l => l.status === 'CONFIRMADO');
   const leadersPresentCount = leadersPresentList.length;
-  const leadersTotalCount = currentMeeting.leadersCheckIn.length;
+  const leadersTotalCount = leadersCheckInList.length;
   const actualSupportersPresentCount = leadersPresentList.reduce((acc, l) => acc + (l.actualSupportersPresent !== undefined ? l.actualSupportersPresent : l.expectedSupporters), 0);
-  const totalSupportersMobilizedCount = currentMeeting.leadersCheckIn
+  const totalSupportersMobilizedCount = leadersCheckInList
     .filter(l => l.status === 'PRESENTE' || l.status === 'CONFIRMADO')
     .reduce((acc, l) => acc + (l.actualSupportersPresent !== undefined ? l.actualSupportersPresent : l.expectedSupporters), 0);
   
-  const venueOccupancyPercent = currentMeeting.venueCapacity > 0 ? Math.round((calculatedJacobsPublic / currentMeeting.venueCapacity) * 100) : 0;
+  const venueOccupancyPercent = (currentMeeting?.venueCapacity || 0) > 0 ? Math.round((calculatedJacobsPublic / (currentMeeting?.venueCapacity || 1)) * 100) : 0;
 
   // Filtered Leader Check-in List for the Table / Cards
   const filteredLeadersCheckIn = useMemo(() => {
-    return currentMeeting.leadersCheckIn.filter(l => {
+    if (!currentMeeting) return [];
+    return (currentMeeting.leadersCheckIn || []).filter(l => {
       const q = leaderSearchQuery.toLowerCase();
       const matchesSearch = !q || l.leaderName.toLowerCase().includes(q) || l.role.toLowerCase().includes(q) || l.territory.toLowerCase().includes(q) || (l.sector && l.sector.toLowerCase().includes(q));
       const matchesStatus = leaderFilterStatus === 'ALL' || l.status === leaderFilterStatus;
       const matchesSector = leaderFilterSector === 'ALL' || l.sector === leaderFilterSector;
       return matchesSearch && matchesStatus && matchesSector;
     });
-  }, [currentMeeting.leadersCheckIn, leaderSearchQuery, leaderFilterStatus, leaderFilterSector]);
+  }, [currentMeeting, leaderSearchQuery, leaderFilterStatus, leaderFilterSector]);
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
@@ -942,9 +962,10 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
         </div>
 
         {/* Right Column: Active Meeting Detail & Submodules (8 Columns) */}
-        <div className="lg:col-span-8 space-y-6">
-          
-          {/* Active Meeting Summary Banner */}
+        {currentMeeting ? (
+          <div className="lg:col-span-8 space-y-6">
+            
+            {/* Active Meeting Summary Banner */}
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
               <div className="space-y-1.5">
@@ -2306,6 +2327,43 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
           )}
 
         </div>
+        ) : (
+          <div className="lg:col-span-8 bg-white p-12 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+              <Calendar size={32} />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-slate-800">
+                {meetings.length === 0 ? 'Nenhuma Reunião Cadastrada' : 'Nenhuma Reunião Selecionada'}
+              </h3>
+              <p className="text-xs text-slate-500 max-w-md">
+                {meetings.length === 0 
+                  ? 'O módulo de reuniões está vazio. Agende um novo evento eleitoral ou restaure os dados demonstrativos para iniciar.'
+                  : 'Selecione uma reunião na lista à esquerda ou ajuste os filtros para inspecionar os detalhes.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsNewMeetingModalOpen(true)}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
+              >
+                <Plus size={15} />
+                <span>Agendar Nova Reunião</span>
+              </button>
+              {meetings.length === 0 && (
+                <button
+                  type="button"
+                  onClick={restoreDemoData}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-2"
+                >
+                  <RotateCcw size={15} />
+                  <span>Restaurar Dados Demo</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
       )}
@@ -2682,7 +2740,7 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                   </span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Evento: <strong>{currentMeeting.title}</strong>
+                  Evento: <strong>{currentMeeting?.title || 'Reunião'}</strong>
                 </p>
               </div>
               <button
@@ -2865,7 +2923,7 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                 };
 
                 setMeetings(prev => prev.map(m => {
-                  if (m.id !== currentMeeting.id) return m;
+                  if (!currentMeeting || m.id !== currentMeeting.id) return m;
                   return {
                     ...m,
                     leadersCheckIn: [...m.leadersCheckIn, leaderObj]
@@ -2966,7 +3024,7 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
                   <span>Alterar Coordenador Responsável</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Reatribuir a responsabilidade e supervisão do evento: <strong>{currentMeeting.title}</strong>
+                  Reatribuir a responsabilidade e supervisão do evento: <strong>{currentMeeting?.title || 'Reunião'}</strong>
                 </p>
               </div>
               <button
@@ -2986,7 +3044,7 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
               <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                 {MOCK_TEAMS.map((team) => {
                   const isSelected = selectedCoordinatorIdForChange === team.id;
-                  const isCurrent = currentMeeting.coordinatorId === team.id;
+                  const isCurrent = currentMeeting?.coordinatorId === team.id;
 
                   return (
                     <div
@@ -3042,7 +3100,7 @@ Gerado em: ${new Date().toLocaleString('pt-BR')} via Sistema de Coordenação de
               </button>
               <button
                 type="button"
-                onClick={() => handleChangeCoordinator(currentMeeting.id, selectedCoordinatorIdForChange)}
+                onClick={() => currentMeeting && handleChangeCoordinator(currentMeeting.id, selectedCoordinatorIdForChange)}
                 className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md transition-all active:scale-95"
               >
                 Confirmar Reatribuição

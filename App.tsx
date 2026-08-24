@@ -16,15 +16,20 @@ import Meetings from './components/Meetings';
 import { UserRole } from './types';
 import { ToastProvider } from './components/Toast';
 import { AuthProvider, useAuth } from './components/AuthContext';
+import { DatabaseProvider, useDatabase } from './components/DatabaseContext';
+import { DatabaseModal } from './components/DatabaseModal';
 import { LoginScreen } from './components/LoginScreen';
 import { ProfileModal } from './components/ProfileModal';
+import { Database } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const { currentUser, isAuthenticated, isGlobalAdmin, logout } = useAuth();
+  const { isDatabaseEmpty } = useDatabase();
   
   const [activeTab, setActiveTab] = useState('meetings');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isDatabaseModalOpen, setIsDatabaseModalOpen] = useState(false);
   const [profileTab, setProfileTab] = useState<'personal' | 'rbac' | 'security' | 'users' | 'notifications'>('personal');
 
   const navItems = [
@@ -158,6 +163,12 @@ const AppContent: React.FC = () => {
         initialTab={profileTab}
       />
 
+      {/* Database Management & Wipe Modal */}
+      <DatabaseModal 
+        isOpen={isDatabaseModalOpen}
+        onClose={() => setIsDatabaseModalOpen(false)}
+      />
+
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-300 lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col p-4">
           
@@ -193,6 +204,22 @@ const AppContent: React.FC = () => {
 
           {/* Bottom Profile & Settings Section */}
           <div className="mt-auto pt-4 border-t border-slate-800 space-y-2">
+            {/* Database Manager Button */}
+            <button 
+              onClick={() => setIsDatabaseModalOpen(true)}
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-xs font-medium cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5">
+                <Database size={16} className={isDatabaseEmpty ? "text-amber-400" : "text-blue-400"} />
+                <span>Banco de Dados</span>
+              </span>
+              {isDatabaseEmpty ? (
+                <span className="px-1.5 py-0.5 bg-amber-400/20 text-amber-300 text-[9px] font-black rounded uppercase">Limpo</span>
+              ) : (
+                <ChevronRight size={14} />
+              )}
+            </button>
+
             <button 
               onClick={() => handleOpenProfile('personal')}
               className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all text-xs font-medium cursor-pointer"
@@ -277,6 +304,20 @@ const AppContent: React.FC = () => {
                </div>
              )}
 
+             {/* Quick Database Manager Button */}
+             <button
+               type="button"
+               onClick={() => setIsDatabaseModalOpen(true)}
+               title="Gerenciar / Limpar Banco de Dados"
+               className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-full text-xs font-bold transition-colors cursor-pointer"
+             >
+               <Database size={14} className={isDatabaseEmpty ? "text-amber-500" : "text-blue-600"} />
+               <span className="hidden sm:inline">Banco de Dados</span>
+               {isDatabaseEmpty && (
+                 <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+               )}
+             </button>
+
              {/* Notifications Dropdown */}
              <div className="relative group">
                 <button className="p-2 text-slate-500 hover:bg-slate-50 rounded-full relative">
@@ -351,7 +392,9 @@ const App: React.FC = () => {
   return (
     <ToastProvider>
       <AuthProvider>
-        <AppContent />
+        <DatabaseProvider>
+          <AppContent />
+        </DatabaseProvider>
       </AuthProvider>
     </ToastProvider>
   );

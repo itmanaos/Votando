@@ -75,7 +75,8 @@ export const MeetingMapViewer: React.FC<MeetingMapViewerProps> = ({
 
   // Active Focused Meeting for Drawer / Details
   const activeMeeting = useMemo(() => {
-    return meetings.find(m => m.id === activeMeetingDetailsId) || filteredMeetings[0] || meetings[0];
+    if (!meetings || meetings.length === 0) return null;
+    return meetings.find(m => m.id === activeMeetingDetailsId) || filteredMeetings[0] || meetings[0] || null;
   }, [meetings, activeMeetingDetailsId, filteredMeetings]);
 
   // Compute Georeferenced Coordinates Projection

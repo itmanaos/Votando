@@ -4,6 +4,7 @@ import {
   Survey, SurveyType, QuestionType, CandidateResult, TallyStats,
   UserProfile, AccessLog
 } from './types';
+import { INITIAL_IMPORTED_VOTERS } from './data/votersList';
 
 // Palette Colors inspired by Votando (Blue/Teal/White)
 export const THEME = {
@@ -43,21 +44,69 @@ export const MOCK_SURVEYS: Survey[] = [
   }
 ];
 
-export const MOCK_VOTERS: Voter[] = [
-  { id: '1', name: 'João Silva', age: 34, gender: 'M', neighborhood: 'Centro', votingZone: '102', votingSection: '045', supportLevel: SupportLevel.LOYAL, lastContact: '2023-10-15', leaderId: 'L1', coordinates: { lat: -23.55, lng: -46.63 }, socioEconomic: 'Classe B', interests: ['Saúde', 'Segurança'], phone: '(11) 98877-1122' },
-  { id: '2', name: 'Maria Souza', age: 28, gender: 'F', neighborhood: 'Norte', votingZone: '105', votingSection: '112', supportLevel: SupportLevel.INDECISIVE, lastContact: '2023-10-12', leaderId: 'L2', coordinates: { lat: -23.56, lng: -46.64 }, socioEconomic: 'Classe C', interests: ['Educação'], phone: '(11) 97766-3344' },
-  { id: '3', name: 'Carlos Oliveira', age: 52, gender: 'M', neighborhood: 'Sul', votingZone: '088', votingSection: '015', supportLevel: SupportLevel.OPPOSITION, lastContact: '2023-10-10', leaderId: 'L1', coordinates: { lat: -23.54, lng: -46.62 }, socioEconomic: 'Classe A', interests: ['Economia'], phone: '(11) 96655-5566' },
-  { id: '4', name: 'Ana Costa', age: 41, gender: 'F', neighborhood: 'Oeste', votingZone: '112', votingSection: '098', supportLevel: SupportLevel.NEUTRAL, lastContact: '2023-10-14', leaderId: 'L3', coordinates: { lat: -23.57, lng: -46.65 }, socioEconomic: 'Classe D', interests: ['Infraestrutura'], phone: '(11) 95544-7788' },
+export const MOCK_VOTERS: Voter[] = INITIAL_IMPORTED_VOTERS;
+
+export const SPORTS_LEAGUE_TEAMS: TeamMember[] = [
+  { id: 'LIGA-01', name: 'Liga Desportiva da Ajuricaba', role: UserRole.LEADER, territory: 'Ajuricaba', goals: 60, achieved: 0, phone: '(92) 98122-1001' },
+  { id: 'LIGA-02', name: 'Liga Desportiva do Aleixo', role: UserRole.LEADER, territory: 'Aleixo', goals: 60, achieved: 0, phone: '(92) 98122-1002' },
+  { id: 'LIGA-03', name: 'Liga Desportiva do Alvorada I', role: UserRole.COORDINATOR, territory: 'Alvorada I', goals: 60, achieved: 0, phone: '(92) 98122-1003' },
+  { id: 'LIGA-04', name: 'Liga Desportiva do Alvorada II', role: UserRole.LEADER, territory: 'Alvorada II', goals: 60, achieved: 0, phone: '(92) 98122-1004' },
+  { id: 'LIGA-05', name: 'Liga Desportiva do Alvorada III', role: UserRole.LEADER, territory: 'Alvorada III', goals: 60, achieved: 0, phone: '(92) 98122-1005' },
+  { id: 'LIGA-06', name: 'Liga Desportiva da Aparecida', role: UserRole.LEADER, territory: 'Aparecida', goals: 60, achieved: 0, phone: '(92) 98122-1006' },
+  { id: 'LIGA-07', name: 'Liga Desportiva do Armando Mendes', role: UserRole.LEADER, territory: 'Armando Mendes', goals: 60, achieved: 0, phone: '(92) 98122-1007' },
+  { id: 'LIGA-08', name: 'Liga Desportiva da Cachoeirinha', role: UserRole.LEADER, territory: 'Cachoeirinha', goals: 60, achieved: 0, phone: '(92) 98122-1008' },
+  { id: 'LIGA-09', name: 'Liga Desportiva da Chapada', role: UserRole.LEADER, territory: 'Chapada', goals: 60, achieved: 0, phone: '(92) 98122-1009' },
+  { id: 'LIGA-10', name: 'Liga Desportiva do Bairro da Cidade Nova, Núcleo I', role: UserRole.COORDINATOR, territory: 'Cidade Nova - Núcleo I', goals: 60, achieved: 0, phone: '(92) 98122-1010' },
+  { id: 'LIGA-11', name: 'Liga Desportiva do Bairro da Cidade Nova II, Núcleo 11', role: UserRole.LEADER, territory: 'Cidade Nova II - Núcleo 11', goals: 60, achieved: 0, phone: '(92) 98122-1011' },
+  { id: 'LIGA-12', name: 'Liga Desportiva do Bairro da Colônia Oliveira Machado', role: UserRole.LEADER, territory: 'Colônia Oliveira Machado', goals: 60, achieved: 0, phone: '(92) 98122-1012' },
+  { id: 'LIGA-13', name: 'Liga Desportiva do Bairro da Colônia Terra Nova III', role: UserRole.LEADER, territory: 'Colônia Terra Nova III', goals: 60, achieved: 0, phone: '(92) 98122-1013' },
+  { id: 'LIGA-14', name: 'Liga Desportiva do Bairro da Compensa III', role: UserRole.COORDINATOR, territory: 'Compensa III', goals: 60, achieved: 0, phone: '(92) 98122-1014' },
+  { id: 'LIGA-15', name: 'Liga Desportiva da Comunidade Nepal', role: UserRole.LEADER, territory: 'Comunidade Nepal', goals: 60, achieved: 0, phone: '(92) 98122-1015' },
+  { id: 'LIGA-16', name: 'Liga Desportiva do Conjunto Manôa', role: UserRole.LEADER, territory: 'Conjunto Manôa', goals: 60, achieved: 0, phone: '(92) 98122-1016' },
+  { id: 'LIGA-17', name: 'Liga Desportiva do Conjunto Oswaldo Frota e Emérico Medeiros', role: UserRole.LEADER, territory: 'Conjunto Oswaldo Frota / Emérico Medeiros', goals: 60, achieved: 0, phone: '(92) 98122-1017' },
+  { id: 'LIGA-18', name: 'Liga Desportiva do Conjunto Viver Melhor', role: UserRole.COORDINATOR, territory: 'Conjunto Viver Melhor', goals: 60, achieved: 0, phone: '(92) 98122-1018' },
+  { id: 'LIGA-19', name: 'Liga Desportiva do Coroado I', role: UserRole.LEADER, territory: 'Coroado I', goals: 60, achieved: 0, phone: '(92) 98122-1019' },
+  { id: 'LIGA-20', name: 'Liga Desportiva do Crespo', role: UserRole.LEADER, territory: 'Crespo', goals: 60, achieved: 0, phone: '(92) 98122-1020' },
+  { id: 'LIGA-21', name: 'Liga Desportiva do Bairro Cristo Rei', role: UserRole.LEADER, territory: 'Cristo Rei', goals: 60, achieved: 0, phone: '(92) 98122-1021' },
+  { id: 'LIGA-22', name: 'Liga Desportiva do Bairro de Flores', role: UserRole.COORDINATOR, territory: 'Flores', goals: 60, achieved: 0, phone: '(92) 98122-1022' },
+  { id: 'LIGA-23', name: 'Liga Desportiva do Bairro Florestal Cidade Nova', role: UserRole.LEADER, territory: 'Florestal Cidade Nova', goals: 60, achieved: 0, phone: '(92) 98122-1023' },
+  { id: 'LIGA-24', name: 'Liga Desportiva do Bairro da Glória', role: UserRole.LEADER, territory: 'Glória', goals: 60, achieved: 0, phone: '(92) 98122-1024' },
+  { id: 'LIGA-25', name: 'Liga Desportiva do Bairro Jardim dos Barés', role: UserRole.LEADER, territory: 'Jardim dos Barés', goals: 60, achieved: 0, phone: '(92) 98122-1025' },
+  { id: 'LIGA-26', name: 'Liga Desportiva do João Paulo II', role: UserRole.LEADER, territory: 'João Paulo II', goals: 60, achieved: 0, phone: '(92) 98122-1026' },
+  { id: 'LIGA-27', name: 'Liga Desportiva do Bairro Lírio do Vale II', role: UserRole.LEADER, territory: 'Lírio do Vale II', goals: 60, achieved: 0, phone: '(92) 98122-1027' },
+  { id: 'LIGA-28', name: 'Liga Desportiva do Bairro do Mauazinho II', role: UserRole.LEADER, territory: 'Mauazinho II', goals: 60, achieved: 0, phone: '(92) 98122-1028' },
+  { id: 'LIGA-29', name: 'Liga Desportiva do Bairro de Monte Pascoal', role: UserRole.LEADER, territory: 'Monte Pascoal', goals: 60, achieved: 0, phone: '(92) 98122-1029' },
+  { id: 'LIGA-30', name: 'Liga Desportiva do Bairro de Nossa Senhora das Graças', role: UserRole.LEADER, territory: 'Nossa Senhora das Graças', goals: 60, achieved: 0, phone: '(92) 98122-1030' },
+  { id: 'LIGA-31', name: 'Liga Desportiva do Bairro da Nova Cidade', role: UserRole.COORDINATOR, territory: 'Nova Cidade', goals: 60, achieved: 0, phone: '(92) 98122-1031' },
+  { id: 'LIGA-32', name: 'Liga Desportiva do Bairro de Nova Esperança', role: UserRole.LEADER, territory: 'Nova Esperança', goals: 60, achieved: 0, phone: '(92) 98122-1032' },
+  { id: 'LIGA-33', name: 'Liga Desportiva do Bairro de Nova Esperança II', role: UserRole.LEADER, territory: 'Nova Esperança II', goals: 60, achieved: 0, phone: '(92) 98122-1033' },
+  { id: 'LIGA-34', name: 'Liga Desportiva do Bairro Nova Floresta', role: UserRole.LEADER, territory: 'Nova Floresta', goals: 60, achieved: 0, phone: '(92) 98122-1034' },
+  { id: 'LIGA-35', name: 'Liga Desportiva do Bairro Nova Jerusalém em Petrópolis', role: UserRole.LEADER, territory: 'Nova Jerusalém / Petrópolis', goals: 60, achieved: 0, phone: '(92) 98122-1035' },
+  { id: 'LIGA-36', name: 'Liga Desportiva do Nova Vitória', role: UserRole.LEADER, territory: 'Nova Vitória', goals: 60, achieved: 0, phone: '(92) 98122-1036' },
+  { id: 'LIGA-37', name: 'Liga Desportiva do Bairro Parque das Laranjeiras – YAEL', role: UserRole.LEADER, territory: 'Parque das Laranjeiras - YAEL', goals: 60, achieved: 0, phone: '(92) 98122-1037' },
+  { id: 'LIGA-38', name: 'Liga Desportiva do Bairro Parque das Nações', role: UserRole.LEADER, territory: 'Parque das Nações', goals: 60, achieved: 0, phone: '(92) 98122-1038' },
+  { id: 'LIGA-39', name: 'Liga Desportiva do Parque Mauá', role: UserRole.LEADER, territory: 'Parque Mauá', goals: 60, achieved: 0, phone: '(92) 98122-1039' },
+  { id: 'LIGA-40', name: 'Liga Desportiva do Bairro da Paz', role: UserRole.LEADER, territory: 'Bairro da Paz', goals: 60, achieved: 0, phone: '(92) 98122-1040' },
+  { id: 'LIGA-41', name: 'Liga Desportiva do Bairro de Petrópolis', role: UserRole.COORDINATOR, territory: 'Petrópolis', goals: 60, achieved: 0, phone: '(92) 98122-1041' },
+  { id: 'LIGA-42', name: 'Liga Desportiva do Bairro Presidente Vargas', role: UserRole.LEADER, territory: 'Presidente Vargas', goals: 60, achieved: 0, phone: '(92) 98122-1042' },
+  { id: 'LIGA-43', name: 'Liga Desportiva do Bairro da Raiz', role: UserRole.LEADER, territory: 'Raiz', goals: 60, achieved: 0, phone: '(92) 98122-1043' },
+  { id: 'LIGA-44', name: 'Liga Desportiva do Bairro de Santa Etelvina', role: UserRole.LEADER, territory: 'Santa Etelvina', goals: 60, achieved: 0, phone: '(92) 98122-1044' },
+  { id: 'LIGA-45', name: 'Liga Desportiva do Bairro Santa Inês', role: UserRole.LEADER, territory: 'Santa Inês', goals: 60, achieved: 0, phone: '(92) 98122-1045' },
+  { id: 'LIGA-46', name: 'Liga Desportiva do Bairro de Santo Antônio', role: UserRole.LEADER, territory: 'Santo Antônio', goals: 60, achieved: 0, phone: '(92) 98122-1046' },
+  { id: 'LIGA-47', name: 'Liga Desportiva do Santos Dumont', role: UserRole.LEADER, territory: 'Santos Dumont', goals: 60, achieved: 0, phone: '(92) 98122-1047' },
+  { id: 'LIGA-48', name: 'Liga Desportiva do Bairro de São Geraldo', role: UserRole.LEADER, territory: 'São Geraldo', goals: 60, achieved: 0, phone: '(92) 98122-1048' },
+  { id: 'LIGA-49', name: 'Liga Desportiva do Bairro de São Jorge', role: UserRole.LEADER, territory: 'São Jorge', goals: 60, achieved: 0, phone: '(92) 98122-1049' },
+  { id: 'LIGA-50', name: 'Liga Desportiva do Bairro de São José I', role: UserRole.COORDINATOR, territory: 'São José I', goals: 60, achieved: 0, phone: '(92) 98122-1050' },
+  { id: 'LIGA-51', name: 'Liga Desportiva do Bairro de São José II', role: UserRole.LEADER, territory: 'São José II', goals: 60, achieved: 0, phone: '(92) 98122-1051' },
+  { id: 'LIGA-52', name: 'Liga Desportiva do São Sebastião', role: UserRole.LEADER, territory: 'São Sebastião', goals: 60, achieved: 0, phone: '(92) 98122-1052' },
+  { id: 'LIGA-53', name: 'Liga Desportiva do Bairro de São Sebastião (Setor II)', role: UserRole.LEADER, territory: 'São Sebastião - Setor II', goals: 60, achieved: 0, phone: '(92) 98122-1053' },
+  { id: 'LIGA-54', name: 'Liga Desportiva do Bairro do Tarumã', role: UserRole.COORDINATOR, territory: 'Tarumã', goals: 60, achieved: 0, phone: '(92) 98122-1054' },
+  { id: 'LIGA-55', name: 'Liga Desportiva da Vila Amazonas, Nossa Senhora das Graças', role: UserRole.LEADER, territory: 'Vila Amazonas / N. Sra. das Graças', goals: 60, achieved: 0, phone: '(92) 98122-1055' },
+  { id: 'LIGA-56', name: 'Liga Desportiva do Bairro da Vila da Prata', role: UserRole.LEADER, territory: 'Vila da Prata', goals: 60, achieved: 0, phone: '(92) 98122-1056' },
+  { id: 'LIGA-57', name: 'Liga Desportiva do Bairro Vitória Régia', role: UserRole.LEADER, territory: 'Vitória Régia', goals: 60, achieved: 0, phone: '(92) 98122-1057' },
 ];
 
-export const MOCK_TEAMS: TeamMember[] = [
-  { id: 'L1', name: 'Ricardo Mendes', role: UserRole.LEADER, territory: 'Zona Sul', goals: 500, achieved: 420, phone: '(11) 98888-1111' },
-  { id: 'L2', name: 'Fernanda Lima', role: UserRole.LEADER, territory: 'Zona Norte', goals: 300, achieved: 150, phone: '(11) 98888-2222' },
-  { id: 'L3', name: 'Marcos Paulo', role: UserRole.LEADER, territory: 'Centro', goals: 250, achieved: 210, phone: '(11) 98888-3333' },
-  { id: 'L4', name: 'Camila Alencar', role: UserRole.LEADER, territory: 'Zona Leste', goals: 450, achieved: 390, phone: '(11) 98888-4444' },
-  { id: 'L5', name: 'Lucas Ferraz', role: UserRole.LEADER, territory: 'Zona Oeste', goals: 350, achieved: 290, phone: '(11) 98888-5555' },
-  { id: 'L6', name: 'Roberto Vasconcelos', role: UserRole.COORDINATOR, territory: 'Geral', goals: 1000, achieved: 920, phone: '(11) 98888-6666' },
-];
+export const MOCK_TEAMS: TeamMember[] = SPORTS_LEAGUE_TEAMS;
 
 export const MOCK_POLLS: PollResult[] = [
   { id: 'P1', date: '2023-08-01', region: 'Geral', candidateA: 32, candidateB: 28, undecided: 20, sampleSize: 1200 },
@@ -274,125 +323,426 @@ export const DEFAULT_LIFECYCLE_STEPS = [
 
 export const MOCK_MEETINGS: Meeting[] = [
   {
-    id: 'M1',
-    title: 'Grande Plenária de Saúde e Mobilidade - Zona Sul',
+    id: 'M-2026-08-25',
+    title: 'REUNIÃO SEMANAL - Alinhamento Estratégico & Metas de Mobilização',
     type: MeetingType.PLENARY,
     status: MeetingStatus.SCHEDULED,
-    date: '2024-10-18',
+    date: '2026-08-25',
     startTime: '19:00',
-    endTime: '21:30',
-    venueName: 'Espaço Comunitário Santo Amaro',
-    address: 'Av. Adolfo Pinheiro, 1420',
-    neighborhood: 'Santo Amaro',
-    votingZone: '088',
-    coordinates: { lat: -23.6521, lng: -46.7032 },
-    venueCapacity: 350,
+    endTime: '21:00',
+    venueName: 'Comitê Central de Campanha - Salão Plenário',
+    address: 'Av. Brigadeiro Faria Lima, 2800',
+    neighborhood: 'Pinheiros',
+    votingZone: '102',
+    coordinates: { lat: -23.5812, lng: -46.6854 },
+    venueCapacity: 200,
     isOutdoor: false,
-    coordinatorId: 'L1',
-    coordinatorName: 'Ricardo Mendes',
-    expectedAttendance: 250,
-    confirmedAttendance: 210,
-    topic: 'Propostas para o novo Hospital Regional e ampliação de corredores de ônibus',
-    targetAudience: 'Profissionais de saúde, comerciantes locais e lideranças comunitárias',
+    coordinatorId: 'L6',
+    coordinatorName: 'Roberto Vasconcelos',
+    expectedAttendance: 150,
+    confirmedAttendance: 140,
+    topic: 'REUNIÃO SEMANAL (25/Ago): Abertura do ciclo semanal, distribuição de metas por território e lançamento do cronograma de visitas.',
+    targetAudience: 'Coordenação Geral, Coordenadores Regionais e Lideranças Chave',
     lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
     attendanceData: {
-      venueAreaM2: 180,
-      densityFactor: 2.2,
-      calculatedDensityCount: 220,
-      manualCount: 205,
-      aiEstimatedCount: 218,
+      venueAreaM2: 150,
+      densityFactor: 1.8,
+      calculatedDensityCount: 145,
+      manualCount: 140,
+      aiEstimatedCount: 142,
       aiConfidence: 94,
       leadersPresentCount: 8,
-      totalSupportersMobilized: 195
+      totalSupportersMobilized: 130
     },
     leadersCheckIn: [
-      { id: 'lc1', leaderName: 'Dr. Arnaldo Silveira', role: 'Presidente Assoc. Médicos', territory: 'Zona Sul', phone: '(11) 98765-4321', expectedSupporters: 35, status: 'CONFIRMADO', notes: 'Trará comitiva de 25 enfermeiros' },
-      { id: 'lc2', leaderName: 'Valéria Santana', role: 'Líder Comunitária Jd. Angela', territory: 'Zona Sul', phone: '(11) 97654-3210', expectedSupporters: 50, status: 'PRESENTE', checkInTime: '18:45' },
-      { id: 'lc3', leaderName: 'Pastor Ezequiel', role: 'Conselho de Pastores Sul', territory: 'Zona Sul', phone: '(11) 96543-2109', expectedSupporters: 60, status: 'CONFIRMADO' },
-      { id: 'lc4', leaderName: 'Prof. Cláudio Nogueira', role: 'Coord. Educacional', territory: 'Zona Sul', phone: '(11) 95432-1098', expectedSupporters: 20, status: 'CONFIRMADO' }
+      { id: 'lc1', leaderName: 'Dr. Arnaldo Silveira', role: 'Presidente Assoc. Médicos', territory: 'Zona Sul', phone: '(11) 98765-4321', expectedSupporters: 25, status: 'CONFIRMADO' },
+      { id: 'lc2', leaderName: 'Valéria Santana', role: 'Líder Comunitária Jd. Angela', territory: 'Zona Sul', phone: '(11) 97654-3210', expectedSupporters: 30, status: 'CONFIRMADO' },
+      { id: 'lc3', leaderName: 'Roberto Vasconcelos', role: 'Coordenação Geral', territory: 'Geral', phone: '(11) 98888-6666', expectedSupporters: 40, status: 'CONFIRMADO' }
     ],
     expenses: [
       {
         id: 'exp1',
         category: ExpenseCategory.VENUE_RENTAL,
-        description: 'Locação de salão para realização de plenária eleitoral',
-        supplierName: 'Espaço Eventos Sul Ltda',
+        description: 'Locação e infraestrutura de auditório para reunião semanal',
+        supplierName: 'Espaço Faria Lima Eventos Ltda',
         supplierTaxId: '12.345.678/0001-90',
-        amount: 2500.00,
-        fundingSource: PaymentFundingSource.FEFC,
+        amount: 1500.00,
+        fundingSource: PaymentFundingSource.CAMPAIGN_BANK_ACCOUNT,
         documentType: 'NF-e',
-        documentNumber: '004921',
-        invoiceFileName: 'nfe_locacao_espaco_sul_004921.pdf',
+        documentNumber: '005810',
+        invoiceFileName: 'nfe_comite_central_005810.pdf',
         complianceStatus: ComplianceAuditStatus.APPROVED,
-        legalNotes: 'Nota fiscal emitida com CNPJ do candidato e descrição detalhada.',
+        legalNotes: 'Nota fiscal emitida com CNPJ de campanha e discriminada.',
         registeredBy: 'Gerência Financeira',
-        createdAt: '2024-10-05'
-      },
+        createdAt: '2026-08-20'
+      }
+    ],
+    aiPredictiveAnalysis: {
+      expectedTurnoutScore: 94,
+      conversionEstimate: 125,
+      riskFactors: [
+        'Horário de pico no trânsito da Faria Lima (recomendar chegada com 30min de antecedência)',
+        'Necessidade de credenciamento ágil na recepção'
+      ],
+      speechRecommendations: [
+        'Apresentar panorama do crescimento das pesquisas e reforçar unidade',
+        'Definir metas semanais claras de contato com eleitores por líder'
+      ],
+      climateAlert: 'Ambiente climatizado.'
+    },
+    legalAuditSummary: {
+      isFullyCompliant: true,
+      totalExpensesAmount: 1500.00,
+      pendingReceiptsCount: 0,
+      auditFlags: ['Despesa em conformidade com as regras do TSE (Lei 9.504/97).']
+    }
+  },
+  {
+    id: 'M-2026-08-27',
+    title: 'REUNIÃO SEMANAL - Operações de Rua & Logística Territorial',
+    type: MeetingType.LEADERS_MEETING,
+    status: MeetingStatus.SCHEDULED,
+    date: '2026-08-27',
+    startTime: '19:00',
+    endTime: '21:00',
+    venueName: 'Espaço Comunitário Santo Amaro',
+    address: 'Av. Adolfo Pinheiro, 1420',
+    neighborhood: 'Santo Amaro',
+    votingZone: '088',
+    coordinates: { lat: -23.6521, lng: -46.7032 },
+    venueCapacity: 180,
+    isOutdoor: false,
+    coordinatorId: 'L1',
+    coordinatorName: 'Ricardo Mendes',
+    expectedAttendance: 120,
+    confirmedAttendance: 110,
+    topic: 'REUNIÃO SEMANAL (27/Ago): Organização das equipes de bandeiraço, pontos de panfletagem e rotas de vans na Zona Sul.',
+    targetAudience: 'Lideranças da Zona Sul, cabos eleitorais e voluntários',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
+    attendanceData: {
+      venueAreaM2: 120,
+      densityFactor: 1.6,
+      calculatedDensityCount: 115,
+      manualCount: 110,
+      aiEstimatedCount: 112,
+      aiConfidence: 91,
+      leadersPresentCount: 6,
+      totalSupportersMobilized: 95
+    },
+    leadersCheckIn: [
+      { id: 'lc4', leaderName: 'Ricardo Mendes', role: 'Coord. Zona Sul', territory: 'Zona Sul', phone: '(11) 98888-1111', expectedSupporters: 35, status: 'CONFIRMADO' },
+      { id: 'lc5', leaderName: 'Pastor Ezequiel', role: 'Conselho Comunitário Sul', territory: 'Zona Sul', phone: '(11) 96543-2109', expectedSupporters: 40, status: 'CONFIRMADO' }
+    ],
+    expenses: [
       {
         id: 'exp2',
         category: ExpenseCategory.SOUND_LIGHTING,
-        description: 'Locação de sonorização, 4 microfones sem fio e iluminação básica',
+        description: 'Sonorização portátil e microfones para plenária setorial',
         supplierName: 'AudioTech Pro Áudio Eireli',
         supplierTaxId: '98.765.432/0001-11',
-        amount: 1800.00,
+        amount: 800.00,
         fundingSource: PaymentFundingSource.CAMPAIGN_BANK_ACCOUNT,
         documentType: 'NF-e',
-        documentNumber: '001284',
-        invoiceFileName: 'nfe_audiotech_001284.pdf',
+        documentNumber: '001420',
+        invoiceFileName: 'nfe_som_santo_amaro_001420.pdf',
         complianceStatus: ComplianceAuditStatus.APPROVED,
-        legalNotes: 'Conforme art. 39 da Lei 9.504/97. Decibéis dentro do padrão legal.',
+        legalNotes: 'Dentro do limite de decibéis permitido.',
         registeredBy: 'Gerência Financeira',
-        createdAt: '2024-10-06'
-      },
+        createdAt: '2026-08-22'
+      }
+    ],
+    aiPredictiveAnalysis: {
+      expectedTurnoutScore: 90,
+      conversionEstimate: 85,
+      riskFactors: ['Verificar abastecimento das caixas de som e material impresso'],
+      speechRecommendations: ['Focar em propostas de transporte público e corredores de ônibus para Santo Amaro.'],
+      climateAlert: 'Tempo firme previsto.'
+    },
+    legalAuditSummary: {
+      isFullyCompliant: true,
+      totalExpensesAmount: 800.00,
+      pendingReceiptsCount: 0,
+      auditFlags: ['Regularidade cadastral e financeira aprovada.']
+    }
+  },
+  {
+    id: 'M-2026-09-01',
+    title: 'REUNIÃO SEMANAL - Avaliação de Desempenho & Metas Territoriais',
+    type: MeetingType.PLENARY,
+    status: MeetingStatus.SCHEDULED,
+    date: '2026-09-01',
+    startTime: '19:00',
+    endTime: '21:00',
+    venueName: 'Auditório Centro Empresarial Norte',
+    address: 'Av. Cruzeiro do Sul, 1800',
+    neighborhood: 'Santana',
+    votingZone: '105',
+    coordinates: { lat: -23.5042, lng: -46.6251 },
+    venueCapacity: 250,
+    isOutdoor: false,
+    coordinatorId: 'L2',
+    coordinatorName: 'Fernanda Lima',
+    expectedAttendance: 180,
+    confirmedAttendance: 165,
+    topic: 'REUNIÃO SEMANAL (01/Set): Revisão dos indicadores da primeira semana de setembro, análise dos formulários e reforço na Zona Norte.',
+    targetAudience: 'Lideranças comunitárias da Zona Norte e equipe de inteligência',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
+    attendanceData: {
+      venueAreaM2: 160,
+      densityFactor: 1.7,
+      calculatedDensityCount: 170,
+      manualCount: 165,
+      aiEstimatedCount: 168,
+      aiConfidence: 93,
+      leadersPresentCount: 9,
+      totalSupportersMobilized: 150
+    },
+    leadersCheckIn: [
+      { id: 'lc6', leaderName: 'Fernanda Lima', role: 'Coord. Zona Norte', territory: 'Zona Norte', phone: '(11) 98888-2222', expectedSupporters: 45, status: 'CONFIRMADO' },
+      { id: 'lc7', leaderName: 'Marcos Santos (Negão)', role: 'Coordenador Bloco Cultural', territory: 'Zona Norte', phone: '(11) 92109-8765', expectedSupporters: 50, status: 'CONFIRMADO' }
+    ],
+    expenses: [
       {
         id: 'exp3',
-        category: ExpenseCategory.STAFF_MEALS,
-        description: 'Lanches fornecidos estritamente aos 12 fiscais e voluntários do staff',
-        supplierName: 'Panificadora e Lanches Padrão ME',
-        supplierTaxId: '45.123.890/0001-44',
-        amount: 360.00,
-        fundingSource: PaymentFundingSource.CAMPAIGN_BANK_ACCOUNT,
+        category: ExpenseCategory.VENUE_RENTAL,
+        description: 'Locação de auditório para plenária regional da Zona Norte',
+        supplierName: 'Centro Empresarial Santana Ltda',
+        supplierTaxId: '44.333.222/0001-99',
+        amount: 1800.00,
+        fundingSource: PaymentFundingSource.FEFC,
         documentType: 'NF-e',
-        documentNumber: '008712',
-        invoiceFileName: 'nfe_lanches_staff_008712.pdf',
+        documentNumber: '007890',
+        invoiceFileName: 'nfe_auditorio_norte_007890.pdf',
         complianceStatus: ComplianceAuditStatus.APPROVED,
-        legalNotes: 'Alimentação restrita à equipe de trabalho credenciada (Art. 39, §6º).',
-        registeredBy: 'Apoio de Campo',
-        createdAt: '2024-10-07'
+        legalNotes: 'Recurso especial FEFC com emissão regular.',
+        registeredBy: 'Gerência Financeira',
+        createdAt: '2026-08-28'
       }
     ],
     aiPredictiveAnalysis: {
       expectedTurnoutScore: 92,
-      conversionEstimate: 165,
-      riskFactors: [
-        'Alto fluxo de tráfego na Av. Adolfo Pinheiro entre 18h30 e 19h15 (recomendar saída antecipada aos participantes)',
-        'Zona com 24% de eleitores indecisos em saúde pública (oportunidade chave de conversão)'
-      ],
-      speechRecommendations: [
-        'Enfatizar tempo de espera no atendimento do Hospital Regional e plano de telemedicina',
-        'Citar nominalmente o Dr. Arnaldo e a líder comunitária Valéria Santana durante a fala',
-        'Fechar com convite para o mutirão de cadastramento digital de eleitores'
-      ],
-      climateAlert: 'Clima ameno, previsão de 22°C sem chuva.'
+      conversionEstimate: 140,
+      riskFactors: ['Fluxo de chegada próximo à estação Santana do metrô'],
+      speechRecommendations: ['Destacar investimentos em creches e UBSs para a Zona Norte.'],
+      climateAlert: 'Noite com temperatura de 21°C.'
     },
     legalAuditSummary: {
       isFullyCompliant: true,
-      totalExpensesAmount: 4660.00,
+      totalExpensesAmount: 1800.00,
       pendingReceiptsCount: 0,
-      auditFlags: [
-        'Todas as despesas possuem NF-e vinculada e quitada via conta bancária de campanha.',
-        'Sem indícios de distribuição indevida de bens a eleitores.'
-      ]
+      auditFlags: ['Documentação e prestação de contas integralmente validadas.']
     }
   },
   {
-    id: 'M2',
-    title: 'Encontro com Lideranças do Comércio e Serviços',
+    id: 'M-2026-09-03',
+    title: 'REUNIÃO SEMANAL - Estratégia Digital, Redes & WhatsApp',
+    type: MeetingType.NEIGHBORHOOD_TALK,
+    status: MeetingStatus.SCHEDULED,
+    date: '2026-09-03',
+    startTime: '19:30',
+    endTime: '21:30',
+    venueName: 'Hub Coworking Pinheiros',
+    address: 'Rua dos Pinheiros, 890',
+    neighborhood: 'Pinheiros',
+    votingZone: '082',
+    coordinates: { lat: -23.5678, lng: -46.6912 },
+    venueCapacity: 100,
+    isOutdoor: false,
+    coordinatorId: 'L5',
+    coordinatorName: 'Lucas Ferraz',
+    expectedAttendance: 80,
+    confirmedAttendance: 75,
+    topic: 'REUNIÃO SEMANAL (03/Set): Alinhamento da fábrica de cortes de vídeo, mobilização de grupos de WhatsApp e resposta rápida a fake news.',
+    targetAudience: 'Criadores de conteúdo, comunicadores e multiplicadores digitais',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
+    attendanceData: {
+      venueAreaM2: 75,
+      densityFactor: 1.3,
+      calculatedDensityCount: 78,
+      manualCount: 75,
+      aiEstimatedCount: 76,
+      aiConfidence: 95,
+      leadersPresentCount: 6,
+      totalSupportersMobilized: 65
+    },
+    leadersCheckIn: [
+      { id: 'lc8', leaderName: 'Lucas Ferraz', role: 'Coord. Inovação & Digital', territory: 'Zona Oeste', phone: '(11) 98888-5555', expectedSupporters: 30, status: 'CONFIRMADO' }
+    ],
+    expenses: [
+      {
+        id: 'exp4',
+        category: ExpenseCategory.VENUE_RENTAL,
+        description: 'Locação de sala de reuniões com link dedicado de alta velocidade',
+        supplierName: 'Pinheiros Work Place SA',
+        supplierTaxId: '11.444.777/0001-88',
+        amount: 900.00,
+        fundingSource: PaymentFundingSource.CAMPAIGN_BANK_ACCOUNT,
+        documentType: 'NF-e',
+        documentNumber: '009941',
+        invoiceFileName: 'nfe_coworking_009941.pdf',
+        complianceStatus: ComplianceAuditStatus.APPROVED,
+        legalNotes: 'Recurso bancário próprio de campanha.',
+        registeredBy: 'Gerência Financeira',
+        createdAt: '2026-08-30'
+      }
+    ],
+    aiPredictiveAnalysis: {
+      expectedTurnoutScore: 95,
+      conversionEstimate: 60,
+      riskFactors: ['Garantir que todos os participantes tenham o pacote de criativos baixado'],
+      speechRecommendations: ['Apresentar números de engajamento no Instagram e TikTok da campanha.'],
+      climateAlert: 'Espaço climatizado.'
+    },
+    legalAuditSummary: {
+      isFullyCompliant: true,
+      totalExpensesAmount: 900.00,
+      pendingReceiptsCount: 0,
+      auditFlags: ['Sem pendências contábeis.']
+    }
+  },
+  {
+    id: 'M-2026-09-08',
+    title: 'REUNIÃO SEMANAL - Alinhamento Jurídico & Prestação de Contas Parcial',
     type: MeetingType.LEADERS_MEETING,
     status: MeetingStatus.SCHEDULED,
-    date: '2024-10-21',
-    startTime: '10:00',
-    endTime: '12:00',
+    date: '2026-09-08',
+    startTime: '18:30',
+    endTime: '20:30',
+    venueName: 'Comitê Central de Campanha',
+    address: 'Av. Brigadeiro Faria Lima, 2800',
+    neighborhood: 'Pinheiros',
+    votingZone: '102',
+    coordinates: { lat: -23.5812, lng: -46.6854 },
+    venueCapacity: 150,
+    isOutdoor: false,
+    coordinatorId: 'L6',
+    coordinatorName: 'Roberto Vasconcelos',
+    expectedAttendance: 90,
+    confirmedAttendance: 85,
+    topic: 'REUNIÃO SEMANAL (08/Set): Auditoria legal e contábil, conferência de notas fiscais do SPCE e conformidade das normas de propaganda TSE.',
+    targetAudience: 'Contabilidade eleitoral, assessoria jurídica e tesouraria',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
+    attendanceData: {
+      venueAreaM2: 100,
+      densityFactor: 1.2,
+      calculatedDensityCount: 88,
+      manualCount: 85,
+      aiEstimatedCount: 86,
+      aiConfidence: 96,
+      leadersPresentCount: 7,
+      totalSupportersMobilized: 80
+    },
+    leadersCheckIn: [
+      { id: 'lc9', leaderName: 'Dr. Roberto Vasconcelos', role: 'Coordenador Geral', territory: 'Geral', phone: '(11) 98888-6666', expectedSupporters: 20, status: 'CONFIRMADO' }
+    ],
+    expenses: [
+      {
+        id: 'exp5',
+        category: ExpenseCategory.LEGAL_ACCOUNTING,
+        description: 'Consultoria técnica de conformidade para entrega da prestação de contas parcial',
+        supplierName: 'Advocacia Eleitoral & Associados',
+        supplierTaxId: '66.777.888/0001-33',
+        amount: 2500.00,
+        fundingSource: PaymentFundingSource.FEFC,
+        documentType: 'NF-e',
+        documentNumber: '003310',
+        invoiceFileName: 'nfe_juridico_003310.pdf',
+        complianceStatus: ComplianceAuditStatus.APPROVED,
+        legalNotes: 'Conforme art. 26 da Lei 9.504/97.',
+        registeredBy: 'Gerência Financeira',
+        createdAt: '2026-09-04'
+      }
+    ],
+    aiPredictiveAnalysis: {
+      expectedTurnoutScore: 96,
+      conversionEstimate: 70,
+      riskFactors: ['Atenção aos prazos estritos de envio do relatório parcial ao TSE'],
+      speechRecommendations: ['Reforçar a todos os coordenadores que nenhum recibo pode ficar sem comprovante bancário.'],
+      climateAlert: 'Comitê interno fechado.'
+    },
+    legalAuditSummary: {
+      isFullyCompliant: true,
+      totalExpensesAmount: 2500.00,
+      pendingReceiptsCount: 0,
+      auditFlags: ['100% de conformidade documental comprovada.']
+    }
+  },
+  {
+    id: 'M-2026-09-10',
+    title: 'REUNIÃO SEMANAL - Logística de Material & Mega-Caravana Leste',
+    type: MeetingType.PLENARY,
+    status: MeetingStatus.SCHEDULED,
+    date: '2026-09-10',
+    startTime: '19:00',
+    endTime: '21:30',
+    venueName: 'Teatro Comunitário Arthur Azevedo',
+    address: 'Av. Radial Leste, 4500',
+    neighborhood: 'Itaquera',
+    votingZone: '094',
+    coordinates: { lat: -23.5385, lng: -46.4532 },
+    venueCapacity: 350,
+    isOutdoor: false,
+    coordinatorId: 'L4',
+    coordinatorName: 'Camila Alencar',
+    expectedAttendance: 260,
+    confirmedAttendance: 240,
+    topic: 'REUNIÃO SEMANAL (10/Set): Alinhamento das carreatas e caminhadas da Zona Leste, reabastecimento de santinhos e adesivaço.',
+    targetAudience: 'Lideranças da Zona Leste, motoristas de comitiva e voluntários',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
+    attendanceData: {
+      venueAreaM2: 220,
+      densityFactor: 1.9,
+      calculatedDensityCount: 250,
+      manualCount: 240,
+      aiEstimatedCount: 245,
+      aiConfidence: 92,
+      leadersPresentCount: 11,
+      totalSupportersMobilized: 215
+    },
+    leadersCheckIn: [
+      { id: 'lc10', leaderName: 'Camila Alencar', role: 'Coord. Zona Leste', territory: 'Zona Leste', phone: '(11) 98888-4444', expectedSupporters: 60, status: 'CONFIRMADO' },
+      { id: 'lc11', leaderName: 'Prof. Henrique Dias', role: 'Coord. Cursinho Popular', territory: 'Zona Leste', phone: '(11) 98222-3344', expectedSupporters: 50, status: 'CONFIRMADO' }
+    ],
+    expenses: [
+      {
+        id: 'exp6',
+        category: ExpenseCategory.GRAPHIC_MATERIALS,
+        description: 'Material impresso informativo para caravana da Zona Leste com CNPJ e tiragem legal',
+        supplierName: 'Gráfica Eleitoral Rápida Ltda',
+        supplierTaxId: '33.222.111/0001-55',
+        amount: 2100.00,
+        fundingSource: PaymentFundingSource.FEFC,
+        documentType: 'NF-e',
+        documentNumber: '004120',
+        invoiceFileName: 'nfe_grafica_leste_004120.pdf',
+        complianceStatus: ComplianceAuditStatus.APPROVED,
+        legalNotes: 'Tiragem e dados do candidato devidamente expressos.',
+        registeredBy: 'Gerência Financeira',
+        createdAt: '2026-09-06'
+      }
+    ],
+    aiPredictiveAnalysis: {
+      expectedTurnoutScore: 91,
+      conversionEstimate: 190,
+      riskFactors: ['Verificar rota do trânsito na Radial Leste e segurança das equipes'],
+      speechRecommendations: ['Focar em propostas para mobilidade sobre trilhos e geração de empregos locais.'],
+      climateAlert: 'Previsão de clima favorável.'
+    },
+    legalAuditSummary: {
+      isFullyCompliant: true,
+      totalExpensesAmount: 2100.00,
+      pendingReceiptsCount: 0,
+      auditFlags: ['Em conformidade com teto de gastos eleitorais.']
+    }
+  },
+  {
+    id: 'M-2026-09-15',
+    title: 'REUNIÃO SEMANAL - Reta Final: Monitoramento e Pesquisas de Campo',
+    type: MeetingType.LEADERS_MEETING,
+    status: MeetingStatus.SCHEDULED,
+    date: '2026-09-15',
+    startTime: '19:00',
+    endTime: '21:00',
     venueName: 'Auditório da Associação Comercial Central',
     address: 'Rua Direita, 250 - 4º Andar',
     neighborhood: 'Centro',
@@ -402,292 +752,259 @@ export const MOCK_MEETINGS: Meeting[] = [
     isOutdoor: false,
     coordinatorId: 'L3',
     coordinatorName: 'Marcos Paulo',
-    expectedAttendance: 85,
-    confirmedAttendance: 74,
-    topic: 'Desoneração fiscal municipal, segurança no centro histórico e revitalização comercial',
-    targetAudience: 'Lojistas, microempreendedores individuais e corretores de imóveis',
-    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS.map(s => ({
-      ...s,
-      status: s.id <= 3 ? StepStatus.COMPLETED : StepStatus.PENDING
-    })),
+    expectedAttendance: 95,
+    confirmedAttendance: 90,
+    topic: 'REUNIÃO SEMANAL (15/Set): Análise das pesquisas internas de tracking eleitoral, foco de convencimento de indecisos na reta final.',
+    targetAudience: 'Comitê político executivo e coordenadores de macro-região',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
     attendanceData: {
-      venueAreaM2: 95,
-      densityFactor: 1.5,
-      calculatedDensityCount: 80,
-      manualCount: 0,
-      aiEstimatedCount: 78,
-      aiConfidence: 89,
-      leadersPresentCount: 6,
-      totalSupportersMobilized: 60
+      venueAreaM2: 90,
+      densityFactor: 1.4,
+      calculatedDensityCount: 92,
+      manualCount: 90,
+      aiEstimatedCount: 91,
+      aiConfidence: 94,
+      leadersPresentCount: 8,
+      totalSupportersMobilized: 82
     },
     leadersCheckIn: [
-      { id: 'lc5', leaderName: 'Rogério Brandão', role: 'Dir. Câmara de Lojistas', territory: 'Centro', phone: '(11) 94321-0987', expectedSupporters: 25, status: 'CONFIRMADO' },
-      { id: 'lc6', leaderName: 'Carla Silveira', role: 'Assoc. Mulheres Empreendedoras', territory: 'Centro', phone: '(11) 93210-9876', expectedSupporters: 30, status: 'CONFIRMADO' }
+      { id: 'lc12', leaderName: 'Marcos Paulo', role: 'Coord. Centro', territory: 'Centro', phone: '(11) 98888-3333', expectedSupporters: 35, status: 'CONFIRMADO' }
     ],
     expenses: [
       {
-        id: 'exp4',
-        category: ExpenseCategory.GRAPHIC_MATERIALS,
-        description: 'Impressão de cadernos de propostas setoriais de desenvolvimento econômico',
-        supplierName: 'Gráfica Eleitoral Rápida Ltda',
-        supplierTaxId: '33.222.111/0001-55',
+        id: 'exp7',
+        category: ExpenseCategory.VENUE_RENTAL,
+        description: 'Locação do auditório da associação comercial com projetor',
+        supplierName: 'Associação Comercial Central',
+        supplierTaxId: '22.111.000/0001-44',
         amount: 850.00,
         fundingSource: PaymentFundingSource.CAMPAIGN_BANK_ACCOUNT,
         documentType: 'NF-e',
-        documentNumber: '003291',
-        invoiceFileName: 'nfe_grafica_003291.pdf',
+        documentNumber: '006733',
+        invoiceFileName: 'nfe_comercial_006733.pdf',
         complianceStatus: ComplianceAuditStatus.APPROVED,
-        legalNotes: 'Contém tiragem, CNPJ do candidato e CNPJ da gráfica em conformidade legal.',
-        registeredBy: 'Comunicação',
-        createdAt: '2024-10-09'
+        legalNotes: 'Recursos bancários de campanha.',
+        registeredBy: 'Gerência Financeira',
+        createdAt: '2026-09-11'
       }
     ],
     aiPredictiveAnalysis: {
-      expectedTurnoutScore: 89,
-      conversionEstimate: 58,
-      riskFactors: [
-        'Dificuldade de estacionamento no entorno (orientar uso de transporte público ou estacionamento conveniado)'
-      ],
-      speechRecommendations: [
-        'Apresentar metas claras de simplificação do alvará eletrônico em 24h',
-        'Destacar projeto de patrulhamento preventivo e videomonitoramento inteligente para o Centro'
-      ],
+      expectedTurnoutScore: 93,
+      conversionEstimate: 75,
+      riskFactors: ['Foco em retenção do voto consolidado e conversão da faixa de 18 a 29 anos'],
+      speechRecommendations: ['Apresentar comparativo de propostas e enfatizar a experiência de gestão.'],
       climateAlert: 'Ambiente interno climatizado.'
     },
     legalAuditSummary: {
       isFullyCompliant: true,
       totalExpensesAmount: 850.00,
       pendingReceiptsCount: 0,
-      auditFlags: ['Despesa gráfica devidamente registrada e com nota fiscal em conformidade.']
+      auditFlags: ['Despesa aprovada sem apontamentos.']
     }
   },
   {
-    id: 'M3',
-    title: 'Mini-Comício e Caminhada no Bairro Brasilândia',
-    type: MeetingType.MINI_RALLY,
-    status: MeetingStatus.SCHEDULED,
-    date: '2024-10-25',
-    startTime: '16:00',
-    endTime: '18:30',
-    venueName: 'Praça das Bandeiras Comunitária',
-    address: 'Rua Parapuã, altura do 800',
-    neighborhood: 'Brasilândia',
-    votingZone: '105',
-    coordinates: { lat: -23.4712, lng: -46.6891 },
-    venueCapacity: 600,
-    isOutdoor: true,
-    coordinatorId: 'L2',
-    coordinatorName: 'Fernanda Lima',
-    expectedAttendance: 400,
-    confirmedAttendance: 320,
-    topic: 'Criação do novo Parque Linear e regularização fundiária de moradias',
-    targetAudience: 'Moradores, associações de bairro, juventude e coletivos culturais',
-    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS.map(s => ({
-      ...s,
-      status: s.id <= 2 ? StepStatus.COMPLETED : StepStatus.PENDING
-    })),
-    attendanceData: {
-      venueAreaM2: 350,
-      densityFactor: 2.8,
-      calculatedDensityCount: 380,
-      manualCount: 0,
-      aiEstimatedCount: 360,
-      aiConfidence: 87,
-      leadersPresentCount: 12,
-      totalSupportersMobilized: 280
-    },
-    leadersCheckIn: [
-      { id: 'lc7', leaderName: 'Marcos Santos (Negão)', role: 'Coordenador Bloco Cultural', territory: 'Zona Norte', phone: '(11) 92109-8765', expectedSupporters: 80, status: 'CONFIRMADO' },
-      { id: 'lc8', leaderName: 'Dona Neusa', role: 'Conselho de Bairro Brasilândia', territory: 'Zona Norte', phone: '(11) 91098-7654', expectedSupporters: 50, status: 'CONFIRMADO' }
-    ],
-    expenses: [
-      {
-        id: 'exp5',
-        category: ExpenseCategory.SOUND_LIGHTING,
-        description: 'Carro de som e microfones para mini-comício de rua',
-        supplierName: 'Voz do Bairro Comunicações ME',
-        supplierTaxId: '55.444.333/0001-22',
-        amount: 2200.00,
-        fundingSource: PaymentFundingSource.FEFC,
-        documentType: 'NF-e',
-        documentNumber: '000542',
-        invoiceFileName: 'nfe_carro_som_000542.pdf',
-        complianceStatus: ComplianceAuditStatus.APPROVED,
-        legalNotes: 'Horário do som limitado até as 22h conforme art. 39 da Lei das Eleições.',
-        registeredBy: 'Gerência de Logística',
-        createdAt: '2024-10-10'
-      }
-    ],
-    aiPredictiveAnalysis: {
-      expectedTurnoutScore: 84,
-      conversionEstimate: 210,
-      riskFactors: [
-        'Evento em área aberta sujeito a intempéries climáticas',
-        'Controle de trânsito em via de linha de ônibus'
-      ],
-      speechRecommendations: [
-        'Compromisso formal com o posto de saúde 24h da Brasilândia',
-        'Destacar defesa do orçamento participativo para pavimentação de travessas'
-      ],
-      climateAlert: 'Possibilidade de pancadas de chuva no final da tarde (28% de probabilidade).'
-    },
-    legalAuditSummary: {
-      isFullyCompliant: true,
-      totalExpensesAmount: 2200.00,
-      pendingReceiptsCount: 0,
-      auditFlags: ['Ofício de comunicação prévia deve ser conferido com a 2ª Cia do Batalhão PM.']
-    }
-  },
-  {
-    id: 'M4',
-    title: 'Plenária de Educação, Juventude e Primeiro Emprego',
+    id: 'M-2026-09-17',
+    title: 'REUNIÃO SEMANAL - Treinamento de Fiscais e Delegados de Votação',
     type: MeetingType.PLENARY,
     status: MeetingStatus.SCHEDULED,
-    date: '2024-10-27',
-    startTime: '18:30',
-    endTime: '21:00',
-    venueName: 'Teatro Comunitário Arthur Azevedo',
-    address: 'Av. Radial Leste, altura 4500',
-    neighborhood: 'Itaquera',
-    votingZone: '094',
-    coordinates: { lat: -23.5385, lng: -46.4532 },
-    venueCapacity: 450,
+    date: '2026-09-17',
+    startTime: '19:00',
+    endTime: '21:30',
+    venueName: 'Espaço Comunitário Santo Amaro',
+    address: 'Av. Adolfo Pinheiro, 1420',
+    neighborhood: 'Santo Amaro',
+    votingZone: '088',
+    coordinates: { lat: -23.6521, lng: -46.7032 },
+    venueCapacity: 300,
     isOutdoor: false,
-    coordinatorId: 'L4',
-    coordinatorName: 'Camila Alencar',
-    expectedAttendance: 320,
-    confirmedAttendance: 285,
-    topic: 'Hub de inovação pública, cursos técnicos e passe livre estudantil integral',
-    targetAudience: 'Estudantes universitários, grêmios estudantis e professores',
-    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS.map(s => ({
-      ...s,
-      status: s.id === 1 ? StepStatus.COMPLETED : StepStatus.PENDING
-    })),
+    coordinatorId: 'L1',
+    coordinatorName: 'Ricardo Mendes',
+    expectedAttendance: 220,
+    confirmedAttendance: 200,
+    topic: 'REUNIÃO SEMANAL (17/Set): Credenciamento oficial de fiscais perante o TRE, instruções para impugnação de seções e coleta do Boletim de Urna (BU).',
+    targetAudience: 'Fiscais de seção, delegados partidários e advogados de plantão',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
     attendanceData: {
-      venueAreaM2: 240,
-      densityFactor: 2.1,
-      calculatedDensityCount: 310,
-      manualCount: 0,
-      aiEstimatedCount: 305,
-      aiConfidence: 91,
-      leadersPresentCount: 9,
-      totalSupportersMobilized: 260
+      venueAreaM2: 180,
+      densityFactor: 2.0,
+      calculatedDensityCount: 210,
+      manualCount: 200,
+      aiEstimatedCount: 205,
+      aiConfidence: 95,
+      leadersPresentCount: 14,
+      totalSupportersMobilized: 185
     },
     leadersCheckIn: [
-      { id: 'lc9', leaderName: 'Camila Alencar', role: 'Dir. DCE ZL', territory: 'Zona Leste', phone: '(11) 98111-2233', expectedSupporters: 45, status: 'CONFIRMADO' },
-      { id: 'lc10', leaderName: 'Prof. Henrique Dias', role: 'Coord. Cursinho Popular', territory: 'Zona Leste', phone: '(11) 98222-3344', expectedSupporters: 60, status: 'CONFIRMADO' }
+      { id: 'lc13', leaderName: 'Ricardo Mendes', role: 'Coord. Zona Sul', territory: 'Zona Sul', phone: '(11) 98888-1111', expectedSupporters: 50, status: 'CONFIRMADO' },
+      { id: 'lc14', leaderName: 'Valéria Santana', role: 'Líder Comunitária Jd. Angela', territory: 'Zona Sul', phone: '(11) 97654-3210', expectedSupporters: 45, status: 'CONFIRMADO' }
     ],
     expenses: [
       {
-        id: 'exp6',
-        category: ExpenseCategory.VENUE_RENTAL,
-        description: 'Locação de espaço cultural com infraestrutura audiovisual',
-        supplierName: 'Espaço Cultural Leste ME',
-        supplierTaxId: '77.888.999/0001-33',
-        amount: 3100.00,
-        fundingSource: PaymentFundingSource.FEFC,
+        id: 'exp8',
+        category: ExpenseCategory.STAFF_MEALS,
+        description: 'Fornecimento de água e lanches credenciados para treinamento de fiscais',
+        supplierName: 'Panificadora e Lanches Padrão ME',
+        supplierTaxId: '45.123.890/0001-44',
+        amount: 600.00,
+        fundingSource: PaymentFundingSource.CAMPAIGN_BANK_ACCOUNT,
         documentType: 'NF-e',
-        documentNumber: '002198',
-        invoiceFileName: 'nfe_teatro_leste_002198.pdf',
+        documentNumber: '009102',
+        invoiceFileName: 'nfe_lanches_fiscais_009102.pdf',
         complianceStatus: ComplianceAuditStatus.APPROVED,
-        legalNotes: 'Conformidade legal e contrato assinado.',
+        legalNotes: 'Alimentação restrita aos fiscais e equipe de trabalho credenciada (Art. 39, §6º).',
         registeredBy: 'Gerência Financeira',
-        createdAt: '2024-10-12'
+        createdAt: '2026-09-13'
       }
     ],
     aiPredictiveAnalysis: {
-      expectedTurnoutScore: 90,
-      conversionEstimate: 215,
-      riskFactors: [
-        'Horário coincide com término de aulas nas faculdades do entorno',
-        'Público jovem exige dinamismo no formato sem discursos longos'
-      ],
-      speechRecommendations: [
-        'Apresentar proposta do cartão bolsa qualificação profissional',
-        'Dar espaço para perguntas rápidas de estudantes no microfone'
-      ],
-      climateAlert: 'Ambiente fechado climatizado.'
+      expectedTurnoutScore: 96,
+      conversionEstimate: 160,
+      riskFactors: ['Garantir que 100% dos fiscais recebam crachá padronizado e aplicativo instalado'],
+      speechRecommendations: ['Instruir sobre postura republicana, respeito às normas eleitorais e atenção ao lacre das urnas.'],
+      climateAlert: 'Clima ameno.'
     },
     legalAuditSummary: {
       isFullyCompliant: true,
-      totalExpensesAmount: 3100.00,
+      totalExpensesAmount: 600.00,
       pendingReceiptsCount: 0,
-      auditFlags: ['Despesa em conformidade com teto da Zona Leste.']
+      auditFlags: ['Conformidade total com a Resolução TSE sobre fiscais partidários.']
     }
   },
   {
-    id: 'M5',
-    title: 'Café da Manhã com Inovadores e Empreendedorismo Social',
-    type: MeetingType.COFFEE_SUPPORTERS,
+    id: 'M-2026-09-22',
+    title: 'REUNIÃO SEMANAL - Mobilização Geral de Voluntários & Blitz dos Últimos Dias',
+    type: MeetingType.PLENARY,
     status: MeetingStatus.SCHEDULED,
-    date: '2024-10-29',
-    startTime: '08:30',
-    endTime: '11:00',
-    venueName: 'Hub Coworking Pinheiros',
-    address: 'Rua dos Pinheiros, 890',
-    neighborhood: 'Pinheiros',
-    votingZone: '082',
-    coordinates: { lat: -23.5678, lng: -46.6912 },
-    venueCapacity: 90,
+    date: '2026-09-22',
+    startTime: '19:00',
+    endTime: '21:30',
+    venueName: 'Ginásio Poliesportivo Central',
+    address: 'Rua São Joaquim, 400',
+    neighborhood: 'Liberdade',
+    votingZone: '102',
+    coordinates: { lat: -23.5601, lng: -46.6382 },
+    venueCapacity: 500,
     isOutdoor: false,
-    coordinatorId: 'L5',
-    coordinatorName: 'Lucas Ferraz',
-    expectedAttendance: 65,
-    confirmedAttendance: 58,
-    topic: 'Incentivos a startups de impacto social, redução de ISS e sustentabilidade urbana',
-    targetAudience: 'Founders de tecnologia, investidores anjo e ativistas ambientais',
-    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS.map(s => ({
-      ...s,
-      status: s.id === 1 ? StepStatus.COMPLETED : StepStatus.PENDING
-    })),
+    coordinatorId: 'L6',
+    coordinatorName: 'Roberto Vasconcelos',
+    expectedAttendance: 420,
+    confirmedAttendance: 390,
+    topic: 'REUNIÃO SEMANAL (22/Set): Alinhamento final de todas as frentes de rua para a última semana de campanha, distribuição de kits e energia total.',
+    targetAudience: 'Todos os multiplicadores, voluntários e coordenadores setoriais',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
     attendanceData: {
-      venueAreaM2: 70,
-      densityFactor: 1.4,
-      calculatedDensityCount: 62,
-      manualCount: 0,
-      aiEstimatedCount: 60,
-      aiConfidence: 93,
-      leadersPresentCount: 5,
-      totalSupportersMobilized: 48
+      venueAreaM2: 320,
+      densityFactor: 2.3,
+      calculatedDensityCount: 400,
+      manualCount: 390,
+      aiEstimatedCount: 395,
+      aiConfidence: 94,
+      leadersPresentCount: 18,
+      totalSupportersMobilized: 360
     },
     leadersCheckIn: [
-      { id: 'lc11', leaderName: 'Lucas Ferraz', role: 'Fundador Startup ESG', territory: 'Zona Oeste', phone: '(11) 97333-4455', expectedSupporters: 15, status: 'CONFIRMADO' }
+      { id: 'lc15', leaderName: 'Roberto Vasconcelos', role: 'Coordenação Geral', territory: 'Geral', phone: '(11) 98888-6666', expectedSupporters: 100, status: 'CONFIRMADO' },
+      { id: 'lc16', leaderName: 'Fernanda Lima', role: 'Coord. Zona Norte', territory: 'Zona Norte', phone: '(11) 98888-2222', expectedSupporters: 70, status: 'CONFIRMADO' },
+      { id: 'lc17', leaderName: 'Camila Alencar', role: 'Coord. Zona Leste', territory: 'Zona Leste', phone: '(11) 98888-4444', expectedSupporters: 80, status: 'CONFIRMADO' }
     ],
     expenses: [
       {
-        id: 'exp7',
-        category: ExpenseCategory.VENUE_RENTAL,
-        description: 'Locação de sala de conferência com projetor 4K',
-        supplierName: 'Pinheiros Work Place SA',
-        supplierTaxId: '11.444.777/0001-88',
-        amount: 1200.00,
-        fundingSource: PaymentFundingSource.CAMPAIGN_BANK_ACCOUNT,
+        id: 'exp9',
+        category: ExpenseCategory.SOUND_LIGHTING,
+        description: 'Sonorização de grande porte e iluminação para plenária geral de voluntários',
+        supplierName: 'AudioTech Pro Áudio Eireli',
+        supplierTaxId: '98.765.432/0001-11',
+        amount: 3200.00,
+        fundingSource: PaymentFundingSource.FEFC,
         documentType: 'NF-e',
-        documentNumber: '009832',
-        invoiceFileName: 'nfe_coworking_009832.pdf',
+        documentNumber: '002890',
+        invoiceFileName: 'nfe_som_ginasio_002890.pdf',
         complianceStatus: ComplianceAuditStatus.APPROVED,
-        legalNotes: 'Recursos próprios de campanha via TED nominal.',
+        legalNotes: 'Nota fiscal discriminada e em conformidade legal.',
         registeredBy: 'Gerência Financeira',
-        createdAt: '2024-10-14'
+        createdAt: '2026-09-18'
       }
     ],
     aiPredictiveAnalysis: {
-      expectedTurnoutScore: 94,
-      conversionEstimate: 45,
-      riskFactors: [
-        'Público de alta exigência técnica em métricas de gestão pública'
-      ],
-      speechRecommendations: [
-        'Apresentar plano de digitalização 100% de serviços municipais',
-        'Citar parcerias público-privadas de descarbonização'
-      ],
-      climateAlert: 'Espaço fechado com ar condicionado.'
+      expectedTurnoutScore: 97,
+      conversionEstimate: 310,
+      riskFactors: ['Organização de filas de entrada no ginásio para evitar aglomerações na calçada'],
+      speechRecommendations: ['Discurso inspirador de encerramento de campanha, agradecimento aos voluntários e foco na virada.'],
+      climateAlert: 'Ambiente amplo e ventilado.'
     },
     legalAuditSummary: {
       isFullyCompliant: true,
-      totalExpensesAmount: 1200.00,
+      totalExpensesAmount: 3200.00,
       pendingReceiptsCount: 0,
-      auditFlags: ['Despesa legalmente regular.']
+      auditFlags: ['Prestação de contas regular.']
+    }
+  },
+  {
+    id: 'M-2026-09-24',
+    title: 'REUNIÃO SEMANAL - Operação Dia D, Fiscalização e Apuração Paralela',
+    type: MeetingType.PLENARY,
+    status: MeetingStatus.SCHEDULED,
+    date: '2026-09-24',
+    startTime: '19:00',
+    endTime: '21:00',
+    venueName: 'Comitê Central de Campanha - Salão Master',
+    address: 'Av. Brigadeiro Faria Lima, 2800',
+    neighborhood: 'Pinheiros',
+    votingZone: '102',
+    coordinates: { lat: -23.5812, lng: -46.6854 },
+    venueCapacity: 250,
+    isOutdoor: false,
+    coordinatorId: 'L6',
+    coordinatorName: 'Roberto Vasconcelos',
+    expectedAttendance: 200,
+    confirmedAttendance: 195,
+    topic: 'REUNIÃO SEMANAL (24/Set): Definição dos postos de apuração rápida, logística de envio de fotos de BUs e central jurídica de emergência no dia da eleição.',
+    targetAudience: 'Coordenação Geral, Coordenadores de Zonas Eleitorais e Plantão Jurídico',
+    lifecycleSteps: DEFAULT_LIFECYCLE_STEPS,
+    attendanceData: {
+      venueAreaM2: 170,
+      densityFactor: 1.9,
+      calculatedDensityCount: 200,
+      manualCount: 195,
+      aiEstimatedCount: 198,
+      aiConfidence: 96,
+      leadersPresentCount: 12,
+      totalSupportersMobilized: 180
+    },
+    leadersCheckIn: [
+      { id: 'lc18', leaderName: 'Roberto Vasconcelos', role: 'Coordenação Geral', territory: 'Geral', phone: '(11) 98888-6666', expectedSupporters: 50, status: 'CONFIRMADO' },
+      { id: 'lc19', leaderName: 'Lucas Ferraz', role: 'Coord. Inovação & Dados', territory: 'Zona Oeste', phone: '(11) 98888-5555', expectedSupporters: 30, status: 'CONFIRMADO' }
+    ],
+    expenses: [
+      {
+        id: 'exp10',
+        category: ExpenseCategory.VENUE_RENTAL,
+        description: 'Locação do espaço central com infraestrutura de rede para apuração e central jurídica',
+        supplierName: 'Espaço Faria Lima Eventos Ltda',
+        supplierTaxId: '12.345.678/0001-90',
+        amount: 1800.00,
+        fundingSource: PaymentFundingSource.CAMPAIGN_BANK_ACCOUNT,
+        documentType: 'NF-e',
+        documentNumber: '006120',
+        invoiceFileName: 'nfe_comite_central_006120.pdf',
+        complianceStatus: ComplianceAuditStatus.APPROVED,
+        legalNotes: 'Total conformidade com as regras do TSE.',
+        registeredBy: 'Gerência Financeira',
+        createdAt: '2026-09-20'
+      }
+    ],
+    aiPredictiveAnalysis: {
+      expectedTurnoutScore: 98,
+      conversionEstimate: 160,
+      riskFactors: ['Testar redundância de conexão de internet e gerador de energia'],
+      speechRecommendations: ['Instruir todos sobre a conferência rigorosa dos Boletins de Urna e envio imediato no app.'],
+      climateAlert: 'Comitê central climatizado.'
+    },
+    legalAuditSummary: {
+      isFullyCompliant: true,
+      totalExpensesAmount: 1800.00,
+      pendingReceiptsCount: 0,
+      auditFlags: ['Conformidade jurídica e contábil 100% atestada.']
     }
   }
 ];

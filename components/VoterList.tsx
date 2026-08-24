@@ -34,6 +34,7 @@ import {
 import { MOCK_VOTERS } from '../constants';
 import { SupportLevel, Voter } from '../types';
 import { useToast } from './Toast';
+import { useDatabase } from './DatabaseContext';
 
 interface DetailModalProps {
   voter: Voter;
@@ -413,7 +414,7 @@ interface SortConfig {
 }
 
 const VoterList: React.FC = () => {
-  const [voters, setVoters] = useState<Voter[]>(MOCK_VOTERS);
+  const { voters, setVoters } = useDatabase();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedZone, setSelectedZone] = useState('');
   const [selectedSupportLevel, setSelectedSupportLevel] = useState('');
@@ -421,6 +422,8 @@ const VoterList: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedVoterIds, setSelectedVoterIds] = useState<Set<string>>(new Set());
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const { showToast } = useToast();
 
   const votingZonesData = useMemo(() => {
@@ -490,6 +493,17 @@ const VoterList: React.FC = () => {
 
     return result;
   }, [voters, searchTerm, selectedZone, selectedSupportLevel, sortConfig]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedZone, selectedSupportLevel]);
+
+  const totalPages = Math.ceil(filteredVoters.length / pageSize) || 1;
+  const paginatedVoters = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredVoters.slice(startIndex, startIndex + pageSize);
+  }, [filteredVoters, currentPage, pageSize]);
 
   const handleSaveNewVoter = (newData: any) => {
     // 1. Validação de Dados Básicos
@@ -813,8 +827,8 @@ const VoterList: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredVoters.length > 0 ? (
-              filteredVoters.map((voter) => (
+            {paginatedVoters.length > 0 ? (
+              paginatedVoters.map((voter) => (
                 <tr 
                   key={voter.id} 
                   className={`transition-colors group cursor-pointer ${selectedVoterIds.has(voter.id) ? 'bg-blue-50' : 'hover:bg-slate-50/50'}`}
@@ -899,11 +913,46 @@ const VoterList: React.FC = () => {
         </table>
       </div>
       
-      <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-        <p>Exibindo {filteredVoters.length} de {voters.length} eleitores</p>
-        <div className="flex gap-2">
-          <button className="px-3 py-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-50 transition-colors">Anterior</button>
-          <button className="px-3 py-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-colors">Próximo</button>
+      <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
+        <div className="flex items-center gap-3">
+          <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">
+            Mostrando {filteredVoters.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} - {Math.min(currentPage * pageSize, filteredVoters.length)} de {filteredVoters.length} eleitores {filteredVoters.length !== voters.length ? `(filtrados de ${voters.length})` : ''}
+          </p>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] uppercase font-bold text-slate-400">Por página:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-xs font-bold text-slate-700 outline-none"
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={450}>Todos</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 text-xs transition-colors shadow-sm"
+          >
+            Anterior
+          </button>
+          <span className="px-3 py-1 bg-white border border-slate-200 rounded-lg font-bold text-xs text-blue-600 shadow-sm">
+            {currentPage} / {totalPages}
+          </span>
+          <button 
+            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+            disabled={currentPage >= totalPages}
+            className="px-3 py-1.5 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 text-xs transition-colors shadow-sm"
+          >
+            Próximo
+          </button>
         </div>
       </div>
     </div>

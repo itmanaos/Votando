@@ -11,6 +11,7 @@ import {
 import { MOCK_VOTERS, MOCK_POLLS, MOCK_TEAMS, MOCK_SURVEYS } from '../constants';
 import { getCampaignInsights } from '../geminiService';
 import { useToast } from './Toast';
+import { useDatabase } from './DatabaseContext';
 
 interface PollingPoint {
   date: string;
@@ -53,6 +54,7 @@ const EXTENDED_POLLS: Record<string, PollingPoint[]> = {
 
 const Dashboard: React.FC = () => {
   const { addToast } = useToast();
+  const { voters, teams, isDatabaseEmpty, restoreDemoData } = useDatabase();
   const [selectedRegion, setSelectedRegion] = useState<string>('Geral');
   const [activeChartType, setActiveChartType] = useState<'area' | 'line'>('area');
   const [aiInsights, setAiInsights] = useState<Array<{ insight: string; action: string }>>([
@@ -63,35 +65,46 @@ const Dashboard: React.FC = () => {
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<string>('Agora mesmo');
 
-  // Calculate dynamic KPIs
-  const totalVoters = 4850;
-  const loyalVoters = 2140;
-  const undecidedVoters = 1420;
-  const oppositionVoters = 890;
-  const neutralVoters = 400;
+  // Calculate dynamic KPIs from active database
+  const totalVoters = voters.length;
+  const loyalVoters = voters.filter(v => v.supportLevel === 'LOYAL').length;
+  const undecidedVoters = voters.filter(v => v.supportLevel === 'INDECISIVE').length;
+  const oppositionVoters = voters.filter(v => v.supportLevel === 'OPPOSITION').length;
+  const neutralVoters = voters.filter(v => v.supportLevel === 'NEUTRAL').length;
 
-  const totalGoals = useMemo(() => MOCK_TEAMS.reduce((acc, t) => acc + t.goals, 0), []);
-  const totalAchieved = useMemo(() => MOCK_TEAMS.reduce((acc, t) => acc + t.achieved, 0), []);
-  const teamEfficiency = Math.round((totalAchieved / totalGoals) * 100);
+  const totalGoals = useMemo(() => teams.reduce((acc, t) => acc + t.goals, 0), [teams]);
+  const totalAchieved = useMemo(() => teams.reduce((acc, t) => acc + t.achieved, 0), [teams]);
+  const teamEfficiency = totalGoals > 0 ? Math.round((totalAchieved / totalGoals) * 100) : 0;
 
   const currentPollData = EXTENDED_POLLS[selectedRegion] || EXTENDED_POLLS['Geral'];
   const latestPoll = currentPollData[currentPollData.length - 1];
   const previousPoll = currentPollData[currentPollData.length - 2];
   const deltaCandidateA = latestPoll.candidateA - previousPoll.candidateA;
 
-  const pieData = [
-    { name: 'Fiel (Consolidado)', value: loyalVoters, color: '#10b981', percentage: Math.round((loyalVoters / totalVoters) * 100) },
-    { name: 'Indeciso (Alvo)', value: undecidedVoters, color: '#f59e0b', percentage: Math.round((undecidedVoters / totalVoters) * 100) },
-    { name: 'Oposição', value: oppositionVoters, color: '#ef4444', percentage: Math.round((oppositionVoters / totalVoters) * 100) },
-    { name: 'Neutro', value: neutralVoters, color: '#94a3b8', percentage: Math.round((neutralVoters / totalVoters) * 100) },
-  ];
+  const pieData = useMemo(() => {
+    if (totalVoters === 0) {
+      return [
+        { name: 'Nenhum Eleitor', value: 1, color: '#e2e8f0', percentage: 100 }
+      ];
+    }
+    return [
+      { name: 'Fiel (Consolidado)', value: loyalVoters, color: '#10b981', percentage: Math.round((loyalVoters / totalVoters) * 100) },
+      { name: 'Indeciso (Alvo)', value: undecidedVoters, color: '#f59e0b', percentage: Math.round((undecidedVoters / totalVoters) * 100) },
+      { name: 'Oposição', value: oppositionVoters, color: '#ef4444', percentage: Math.round((oppositionVoters / totalVoters) * 100) },
+      { name: 'Neutro', value: neutralVoters, color: '#94a3b8', percentage: Math.round((neutralVoters / totalVoters) * 100) },
+    ];
+  }, [totalVoters, loyalVoters, undecidedVoters, oppositionVoters, neutralVoters]);
 
-  const teamChartData = [
-    { territory: 'Zona Sul', meta: 500, realizado: 420, rate: 84, leader: 'Ricardo Mendes' },
-    { territory: 'Zona Norte', meta: 300, realizado: 150, rate: 50, leader: 'Fernanda Lima' },
-    { territory: 'Centro', meta: 200, realizado: 175, rate: 87.5, leader: 'Marcos Paulo' },
-    { territory: 'Zona Oeste', meta: 250, realizado: 190, rate: 76, leader: 'Patrícia Rocha' },
-  ];
+  const teamChartData = useMemo(() => {
+    if (teams.length === 0) return [];
+    return teams.map(t => ({
+      territory: t.territory || t.name,
+      meta: t.goals,
+      realizado: t.achieved,
+      rate: t.goals > 0 ? Math.round((t.achieved / t.goals) * 100) : 0,
+      leader: t.name
+    }));
+  }, [teams]);
 
   const strategicPriorities = [
     { topic: 'Saúde Pública & UPAs', votes: 42, color: 'bg-blue-500' },
@@ -164,8 +177,8 @@ const Dashboard: React.FC = () => {
           </div>
           <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Equipes & Lideranças</p>
           <div className="flex items-baseline gap-2 mt-1">
-            <h3 className="text-3xl font-black text-slate-800 tracking-tight">{MOCK_TEAMS.length + 1} núcleos</h3>
-            <span className="text-xs text-slate-400 font-medium">ativos</span>
+            <h3 className="text-3xl font-black text-slate-800 tracking-tight">{teams.length}</h3>
+            <span className="text-xs text-slate-400 font-medium">integrantes</span>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
             <span>Captados: <strong className="text-slate-700 font-bold">{totalAchieved}</strong></span>

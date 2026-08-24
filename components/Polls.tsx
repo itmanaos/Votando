@@ -36,6 +36,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { MOCK_SURVEYS, MOCK_POLLS } from '../constants';
 import { Survey, SurveyType, Question, QuestionType } from '../types';
 import { useToast } from './Toast';
+import { useDatabase } from './DatabaseContext';
 
 const SurveyDetailModal: React.FC<{ survey: Survey; onClose: () => void }> = ({ survey, onClose }) => {
   const getStatusColor = (status: string) => {
@@ -702,7 +703,7 @@ const SurveyBuilderModal: React.FC<{ onClose: () => void; onSave: (survey: any) 
 };
 
 const Polls: React.FC = () => {
-  const [surveys, setSurveys] = useState<Survey[]>(MOCK_SURVEYS);
+  const { surveys, setSurveys } = useDatabase();
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
